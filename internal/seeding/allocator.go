@@ -6,6 +6,8 @@ import (
 	"math/rand"
 )
 
+const maxMountsPerNamespace = 5
+
 func Allocate(in AllocationInput) ([]NamespacePlan, error) {
 	if in.NamespaceCount <= 0 {
 		return nil, errors.New("namespace count must be > 0")
@@ -22,15 +24,20 @@ func Allocate(in AllocationInput) ([]NamespacePlan, error) {
 		rng = rand.New(rand.NewSource(rand.Int63()))
 	}
 
-	nsSecretCounts := allocateNamespaceSecrets(rng, in.TotalSecrets, in.NamespaceCount)
+	mountCounts := randomMountCounts(rng, in.NamespaceCount)
+	if in.TotalSecrets > 0 && allZero(mountCounts) {
+		mountCounts[rng.Intn(len(mountCounts))] = 1
+	}
+
+	nsSecretCounts := allocateSecretsAcrossMountableNamespaces(rng, in.TotalSecrets, mountCounts)
 	result := make([]NamespacePlan, 0, in.NamespaceCount)
 	for i := 0; i < in.NamespaceCount; i++ {
 		nsName := fmt.Sprintf("seed-ns-%03d", i+1)
 		nsSecrets := nsSecretCounts[i]
-
-		mountCount := 1
-		if nsSecrets > 1 {
-			mountCount = 1 + rng.Intn(nsSecrets)
+		mountCount := mountCounts[i]
+		if mountCount == 0 {
+			result = append(result, NamespacePlan{Name: nsName, Mounts: nil})
+			continue
 		}
 
 		mountSecretCounts := allocateMountSecrets(rng, nsSecrets, mountCount)
@@ -56,15 +63,45 @@ func pickKVVersion(rng *rand.Rand, kv2Probability float64) int {
 	return 1
 }
 
-func allocateNamespaceSecrets(rng *rand.Rand, total int, namespaces int) []int {
-	if total >= namespaces {
-		return allocatePositiveParts(rng, total, namespaces)
+func randomMountCounts(rng *rand.Rand, namespaces int) []int {
+	counts := make([]int, namespaces)
+	for i := 0; i < namespaces; i++ {
+		counts[i] = rng.Intn(maxMountsPerNamespace + 1)
+	}
+	return counts
+}
+
+func allZero(values []int) bool {
+	for _, value := range values {
+		if value != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func allocateSecretsAcrossMountableNamespaces(rng *rand.Rand, total int, mountCounts []int) []int {
+	parts := make([]int, len(mountCounts))
+	if total == 0 {
+		return parts
 	}
 
-	parts := make([]int, namespaces)
-	for i := 0; i < total; i++ {
-		parts[rng.Intn(namespaces)]++
+	eligible := make([]int, 0, len(mountCounts))
+	for i, count := range mountCounts {
+		if count > 0 {
+			eligible = append(eligible, i)
+		}
 	}
+
+	if len(eligible) == 0 {
+		return parts
+	}
+
+	for i := 0; i < total; i++ {
+		nsIndex := eligible[rng.Intn(len(eligible))]
+		parts[nsIndex]++
+	}
+
 	return parts
 }
 

@@ -22,15 +22,17 @@ func TestAllocate_EnforcesExactTotalAndNamespaceCount(t *testing.T) {
 	total := 0
 	for _, ns := range plan {
 		require.NotEmpty(t, ns.Name)
-		require.NotEmpty(t, ns.Mounts)
+		require.LessOrEqual(t, len(ns.Mounts), 5)
 		nsTotal := 0
 		for _, m := range ns.Mounts {
 			require.NotEmpty(t, m.Name)
-			require.Greater(t, m.SecretCount, 0)
+			require.GreaterOrEqual(t, m.SecretCount, 0)
 			require.Contains(t, []int{1, 2}, m.KVVersion)
 			nsTotal += m.SecretCount
 		}
-		require.Greater(t, nsTotal, 0)
+		if len(ns.Mounts) == 0 {
+			require.Equal(t, 0, nsTotal)
+		}
 		total += nsTotal
 	}
 
@@ -75,4 +77,18 @@ func TestAllocate_RejectsInvalidInput(t *testing.T) {
 
 	_, err = Allocate(AllocationInput{NamespaceCount: 1, TotalSecrets: 1, KV2Probability: 2})
 	require.ErrorContains(t, err, "kv2 probability")
+}
+
+func TestAllocate_MountCountIsAlwaysBetweenZeroAndTwenty(t *testing.T) {
+	for seed := int64(1); seed <= 200; seed++ {
+		plan, err := Allocate(AllocationInput{
+			NamespaceCount: 1,
+			TotalSecrets:   200,
+			KV2Probability: 0.9,
+			RNG:            rand.New(rand.NewSource(seed)),
+		})
+		require.NoError(t, err)
+		require.Len(t, plan, 1)
+		require.LessOrEqual(t, len(plan[0].Mounts), 5)
+	}
 }
