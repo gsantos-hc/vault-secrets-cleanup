@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 	"time"
 
@@ -190,4 +191,72 @@ func normalizeMountPath(path string) string {
 		trimmed += "/"
 	}
 	return trimmed
+}
+
+func (c *Client) CreateNamespace(ctx context.Context, namespace string) error {
+	ns := strings.Trim(strings.TrimSpace(namespace), "/")
+	if ns == "" {
+		return errors.New("namespace is required")
+	}
+
+	_, err := c.client.Logical().WriteWithContext(ctx, path.Join("sys/namespaces", ns), map[string]any{})
+	if err != nil {
+		return fmt.Errorf("create namespace %q: %w", ns, err)
+	}
+
+	return nil
+}
+
+func (c *Client) EnableKVMount(ctx context.Context, mountPath string, kvVersion int) error {
+	mount := strings.Trim(strings.TrimSpace(mountPath), "/")
+	if mount == "" {
+		return errors.New("mount path is required")
+	}
+	if kvVersion != 1 && kvVersion != 2 {
+		return fmt.Errorf("invalid kv version %d", kvVersion)
+	}
+
+	_, err := c.client.Logical().WriteWithContext(ctx, path.Join("sys/mounts", mount), map[string]any{
+		"type": "kv",
+		"options": map[string]any{
+			"version": fmt.Sprintf("%d", kvVersion),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("enable kv mount %q: %w", mount, err)
+	}
+
+	return nil
+}
+
+func (c *Client) WriteKVSecret(ctx context.Context, mountPath, secretPath string, data map[string]any, kvVersion int) error {
+	mount := strings.Trim(strings.TrimSpace(mountPath), "/")
+	secret := strings.Trim(strings.TrimSpace(secretPath), "/")
+	if mount == "" {
+		return errors.New("mount path is required")
+	}
+	if secret == "" {
+		return errors.New("secret path is required")
+	}
+	if kvVersion != 1 && kvVersion != 2 {
+		return fmt.Errorf("invalid kv version %d", kvVersion)
+	}
+
+	writePath := path.Join(mount, secret)
+	payload := data
+	if payload == nil {
+		payload = map[string]any{}
+	}
+
+	if kvVersion == 2 {
+		writePath = path.Join(mount, "data", secret)
+		payload = map[string]any{"data": payload}
+	}
+
+	_, err := c.client.Logical().WriteWithContext(ctx, writePath, payload)
+	if err != nil {
+		return fmt.Errorf("write secret %q on mount %q: %w", secret, mount, err)
+	}
+
+	return nil
 }
