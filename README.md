@@ -77,6 +77,56 @@ vault-secrets-cleanup execute \
   --rate-limit 5
 ```
 
+## Cluster Seeding Script
+
+Use the standalone seeding script to generate synthetic Vault Enterprise data with:
+
+- configurable namespace count,
+- randomized mount distribution per namespace,
+- randomized secret distribution per mount,
+- exact user-defined total secret count.
+
+```bash
+go run ./scripts/seed \
+  --config example-config.yaml \
+  --namespaces 25 \
+  --total-secrets 50000 \
+  --kv2-probability 0.9 \
+  --namespace-prefix seed \
+  --mount-prefix seed \
+  --seed 42
+```
+
+Dry run example (no writes):
+
+```bash
+go run ./scripts/seed \
+  --config example-config.yaml \
+  --namespaces 10 \
+  --total-secrets 1000 \
+  --dry-run
+```
+
+Required Vault capabilities for seeding include namespace creation, mount creation, and secret writes:
+
+```hcl
+path "sys/namespaces/*" {
+  capabilities = ["create", "update"]
+}
+
+path "+/sys/mounts/*" {
+  capabilities = ["create", "update"]
+}
+
+path "+/*/data/*" {
+  capabilities = ["create", "update"]
+}
+
+path "+/*" {
+  capabilities = ["create", "update"]
+}
+```
+
 ## Documentation
 
 - **[REQUIREMENTS.md](REQUIREMENTS.md)** - Complete requirements specification

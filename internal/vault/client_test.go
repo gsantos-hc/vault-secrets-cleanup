@@ -3,6 +3,7 @@ package vault
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -101,4 +102,75 @@ func TestStartTokenRenewal_StopsOnContextCancel(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		t.Fatal("timeout waiting token renewal loop to stop")
 	}
+}
+
+func TestCreateNamespace(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPut, r.Method)
+		require.Equal(t, "/v1/sys/namespaces/team-a", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{}}`))
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{Address: srv.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	err = client.CreateNamespace(context.Background(), "team-a")
+	require.NoError(t, err)
+}
+
+func TestEnableKVMount(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPut, r.Method)
+		require.Equal(t, "/v1/sys/mounts/kv-team-a", r.URL.Path)
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(body, &payload))
+		require.Equal(t, "kv", payload["type"])
+
+		rawOptions, ok := payload["options"].(map[string]any)
+		require.True(t, ok)
+		require.Equal(t, "2", rawOptions["version"])
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{}}`))
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{Address: srv.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	err = client.EnableKVMount(context.Background(), "kv-team-a", 2)
+	require.NoError(t, err)
+}
+
+func TestWriteKVSecretV2(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPut, r.Method)
+		require.Equal(t, "/v1/kv-team-a/data/app/config", r.URL.Path)
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(body, &payload))
+
+		rawData, ok := payload["data"].(map[string]any)
+		require.True(t, ok)
+		require.Equal(t, "bar", rawData["foo"])
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{}}`))
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{Address: srv.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	err = client.WriteKVSecret(context.Background(), "kv-team-a", "app/config", map[string]any{"foo": "bar"}, 2)
+	require.NoError(t, err)
 }
