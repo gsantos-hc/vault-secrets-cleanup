@@ -29,16 +29,18 @@ func TestStalenessCalculatorCalculate(t *testing.T) {
 
 	t.Run("stale when over threshold", func(t *testing.T) {
 		access := &vpb.AccessRecord{LastAccessed: time.Now().UTC().Add(-10 * time.Minute).Format(time.RFC3339)}
-		category, _, days := calc.Calculate(secret, ns, mount, access)
+		category, reason, days := calc.Calculate(secret, ns, mount, access)
 		require.Equal(t, "stale", category)
 		require.Equal(t, 0, days)
+		require.Equal(t, "Not accessed in 10m (threshold: 5m)", reason)
 	})
 
 	t.Run("active when within threshold", func(t *testing.T) {
 		access := &vpb.AccessRecord{LastAccessed: time.Now().UTC().Add(-3 * time.Minute).Format(time.RFC3339)}
-		category, _, days := calc.Calculate(secret, &vpb.Namespace{Path: "dev/team-a"}, mount, access)
+		category, reason, days := calc.Calculate(secret, &vpb.Namespace{Path: "dev/team-a"}, mount, access)
 		require.Equal(t, "active", category)
 		require.GreaterOrEqual(t, days, 0)
+		require.Equal(t, "Accessed 3m ago", reason)
 	})
 }
 

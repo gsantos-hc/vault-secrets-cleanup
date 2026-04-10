@@ -18,11 +18,11 @@ func formatMarkdown(plan *vpb.DeletionPlan) string {
 	b.WriteString(fmt.Sprintf("- Excluded: %d\n", plan.GetStats().GetExcludedCount()))
 	b.WriteString(fmt.Sprintf("- To delete: %d\n\n", plan.GetStats().GetToDeleteCount()))
 	b.WriteString("## Actions\n\n")
-	b.WriteString("| Namespace | Mount | Secret | Category | Reason |\n")
-	b.WriteString("| --- | --- | --- | --- | --- |\n")
+	b.WriteString("| Namespace | Mount | Secret | Category | Last Access | Reason |\n")
+	b.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 	for _, action := range plan.Actions {
-		b.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
-			action.GetNamespacePath(), action.GetMountPath(), action.GetSecretPath(), action.GetCategory(), action.GetReason()))
+		b.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n",
+			action.GetNamespacePath(), action.GetMountPath(), action.GetSecretPath(), action.GetCategory(), actionLastAccessAge(action), action.GetReason()))
 	}
 
 	return b.String()
