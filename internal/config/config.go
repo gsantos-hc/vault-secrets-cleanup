@@ -67,6 +67,9 @@ func Load(configPath string, flagValues map[string]any) (*Config, error) {
 		if val == nil {
 			continue
 		}
+		if s, ok := val.(string); ok && strings.TrimSpace(s) == "" {
+			continue
+		}
 		v.Set(k, val)
 	}
 

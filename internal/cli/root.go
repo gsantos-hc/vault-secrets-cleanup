@@ -56,6 +56,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&vaultAddr, "vault-addr", "", "Vault address (overrides config/env)")
 	rootCmd.PersistentFlags().StringVar(&vaultToken, "vault-token", "", "Vault token (overrides config/env)")
 	rootCmd.AddCommand(newValidateCmd())
+	rootCmd.AddCommand(newDiscoverCmd())
 }
 
 func Execute() error {

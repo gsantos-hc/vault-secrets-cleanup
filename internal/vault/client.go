@@ -129,3 +129,24 @@ func (c *Client) WithNamespace(namespace string) (*Client, error) {
 func (c *Client) Namespace() string {
 	return c.client.Namespace()
 }
+
+func (c *Client) Address() string {
+	return c.client.Address()
+}
+
+func (c *Client) ListMounts(ctx context.Context) (map[string]*api.MountOutput, error) {
+	_ = ctx
+	mounts, err := c.client.Sys().ListMounts()
+	if err != nil {
+		return nil, fmt.Errorf("list mounts: %w", err)
+	}
+	return mounts, nil
+}
+
+func (c *Client) ListSecrets(ctx context.Context, path string) (*api.Secret, error) {
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("list secrets at %s: %w", path, err)
+	}
+	return secret, nil
+}
