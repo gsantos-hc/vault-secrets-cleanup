@@ -131,6 +131,12 @@ path "+/*" {
 
 - **[REQUIREMENTS.md](REQUIREMENTS.md)** - Complete requirements specification
 - **[SUMMARY.md](SUMMARY.md)** - Executive summary and key recommendations
+- **[docs/installation.md](docs/installation.md)** - Installation and build options
+- **[docs/configuration.md](docs/configuration.md)** - Full configuration reference
+- **[docs/usage.md](docs/usage.md)** - CLI command usage and examples
+- **[docs/workflows.md](docs/workflows.md)** - End-to-end operational workflows
+- **[docs/troubleshooting.md](docs/troubleshooting.md)** - Common issues and fixes
+- **[docs/examples](docs/examples)** - Practical cleanup scenarios
 
 ## Requirements
 
@@ -233,6 +239,29 @@ path "+/kv/*" {
 ## Contributing
 
 Contributions are welcome! Please read the requirements documentation and follow Go best practices.
+
+## Testing and Release Readiness
+
+```bash
+# Unit tests
+go test ./...
+
+# Integration tests (requires local test Vault)
+./scripts/setup-test-vault.sh
+
+# In another shell
+export VAULT_TEST_ADDR=http://127.0.0.1:8200
+export VAULT_TEST_TOKEN=root
+go test -tags=integration -v ./tests/integration/...
+
+# End-to-end workflow test
+go test -v ./tests/e2e/...
+
+# Benchmarks
+./scripts/benchmark.sh
+```
+
+CI is defined in [ci.yml](.github/workflows/ci.yml) and release automation in [release.yml](.github/workflows/release.yml).
 
 ## License
 
