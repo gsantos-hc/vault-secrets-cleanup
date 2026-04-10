@@ -33,7 +33,7 @@ func baseCfg() *config.Config {
 	return &config.Config{
 		Vault:     config.VaultConfig{Address: "https://vault.example.com", Token: "token"},
 		RateLimit: config.RateLimitConfig{RequestsPerSecond: 10},
-		Staleness: config.StalenessConfig{DefaultDays: 365},
+		Staleness: config.StalenessConfig{DefaultPeriod: "365d"},
 	}
 }
 

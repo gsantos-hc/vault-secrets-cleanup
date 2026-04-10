@@ -6,6 +6,9 @@ bin/
 *.test
 coverage.out
 
+# Data files
+/*.pb
+
 # IDE
 .vscode/
 .idea/

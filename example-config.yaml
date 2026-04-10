@@ -7,10 +7,10 @@ rate_limit:
   burst: 100
 
 staleness:
-  default_days: 365
+  default_period: 365d
   namespaces:
-    prod/*: 730
-    dev/*: 90
+    prod/*: 730d
+    dev/*: 90d
 
 exclusions:
   namespaces:

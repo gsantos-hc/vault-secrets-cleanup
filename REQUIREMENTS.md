@@ -596,7 +596,7 @@ vault-secrets-cleanup import \
 vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
-  --staleness-days 365 \
+  --staleness-period 365d \
   --matching-strategy strict \
   --exclude-patterns exclusions.txt \
   --output deletion-plan.pb
@@ -678,7 +678,7 @@ correlation:
 
 # Staleness configuration
 staleness:
-  default_days: 365
+  default_period: 365d
   
   namespaces:
     prod/*: 730
@@ -935,7 +935,7 @@ vault-secrets-cleanup analyze \
 vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
-  --staleness-days 365 \
+  --staleness-period 365d \
   --output deletion-plan.pb
 
 # 5. Review plan
@@ -982,7 +982,7 @@ vault-secrets-cleanup import \
 vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
-  --staleness-days 365 \
+  --staleness-period 365d \
   --matching-strategy strict \
   --output deletion-plan.pb
 
@@ -1017,7 +1017,7 @@ vault-secrets-cleanup analyze \
 vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
-  --staleness-days 365 \
+  --staleness-period 365d \
   --output deletion-plan-$(date +%Y-%m-%d).pb
 
 # 4. Execute

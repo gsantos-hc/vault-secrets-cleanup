@@ -85,3 +85,33 @@ func TestValidate_RequiredFields(t *testing.T) {
 	err := cfg.Validate()
 	require.Error(t, err)
 }
+
+func TestLoad_StalenessPeriodFromFile(t *testing.T) {
+	t.Setenv("VAULT_ADDR", "https://vault.env.example.com")
+	t.Setenv("VAULT_TOKEN", "env-token")
+
+	cfgPath := writeTempConfig(t, `staleness:
+  default_period: 365d
+  namespaces:
+    prod/*: 1d
+    dev/*: 5m
+`)
+
+	cfg, err := Load(cfgPath, nil)
+	require.NoError(t, err)
+	require.Equal(t, "365d", cfg.Staleness.DefaultPeriod)
+	require.Equal(t, "1d", cfg.Staleness.Namespaces["prod/*"])
+	require.Equal(t, "5m", cfg.Staleness.Namespaces["dev/*"])
+}
+
+func TestValidate_InvalidStalenessPeriod(t *testing.T) {
+	cfg := Config{
+		Vault:     VaultConfig{Address: "https://vault.example.com", Token: "token"},
+		RateLimit: RateLimitConfig{RequestsPerSecond: 100},
+		Staleness: StalenessConfig{DefaultPeriod: "bad"},
+	}
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	require.ErrorContains(t, err, "staleness.default_period")
+}
