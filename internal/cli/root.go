@@ -57,6 +57,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&vaultToken, "vault-token", "", "Vault token (overrides config/env)")
 	rootCmd.AddCommand(newValidateCmd())
 	rootCmd.AddCommand(newDiscoverCmd())
+	rootCmd.AddCommand(newAnalyzeCmd())
+	rootCmd.AddCommand(newImportCmd())
 }
 
 func Execute() error {
