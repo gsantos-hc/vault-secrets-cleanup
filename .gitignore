@@ -1,0 +1,14 @@
+# Binaries
+bin/
+
+# Build artifacts
+*.out
+*.test
+coverage.out
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store

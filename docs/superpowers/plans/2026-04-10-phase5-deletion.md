@@ -188,7 +188,7 @@ import (
 	"context"
 	"testing"
 	"github.com/stretchr/testify/assert"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 func TestExecutor_Delete(t *testing.T) {
@@ -206,9 +206,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/yourusername/vault-secrets-cleanup/internal/retry"
-	"github.com/yourusername/vault-secrets-cleanup/internal/vault"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/retry"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/vault"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type Executor struct {
@@ -406,10 +406,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/internal/ratelimit"
-	"github.com/yourusername/vault-secrets-cleanup/internal/retry"
-	"github.com/yourusername/vault-secrets-cleanup/internal/vault"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/ratelimit"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/retry"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/vault"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -575,11 +575,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/internal/deletion"
-	"github.com/yourusername/vault-secrets-cleanup/internal/ratelimit"
-	"github.com/yourusername/vault-secrets-cleanup/internal/retry"
-	"github.com/yourusername/vault-secrets-cleanup/internal/vault"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/deletion"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/ratelimit"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/retry"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/vault"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"google.golang.org/protobuf/proto"
 )
 

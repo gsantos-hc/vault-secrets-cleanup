@@ -94,7 +94,7 @@ vault-secrets-cleanup execute \
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/vault-secrets-cleanup
+git clone https://github.com/gsantos-hc/vault-secrets-cleanup
 cd vault-secrets-cleanup
 
 # Build

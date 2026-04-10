@@ -46,7 +46,7 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "github.com/yourusername/vault-secrets-cleanup/pkg/proto";
+option go_package = "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto";
 
 // AccessData represents access patterns for secrets
 message AccessData {
@@ -422,7 +422,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type Extractor struct{}
@@ -530,7 +530,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type Aggregator struct {
@@ -703,8 +703,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/internal/audit"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/audit"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -864,7 +864,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"google.golang.org/protobuf/proto"
 )
 

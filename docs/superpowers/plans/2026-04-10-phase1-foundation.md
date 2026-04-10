@@ -51,7 +51,7 @@ vault-secrets-cleanup/
 
 - [ ] **Step 1: Initialize Go module**
 ```bash
-go mod init github.com/yourusername/vault-secrets-cleanup
+go mod init github.com/gsantos-hc/vault-secrets-cleanup
 ```
 
 - [ ] **Step 2: Create main.go**
@@ -60,7 +60,7 @@ package main
 
 import (
 	"os"
-	"github.com/yourusername/vault-secrets-cleanup/internal/cli"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/cli"
 )
 
 func main() {

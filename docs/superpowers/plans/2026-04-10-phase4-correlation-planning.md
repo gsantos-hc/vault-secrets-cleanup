@@ -51,7 +51,7 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "github.com/yourusername/vault-secrets-cleanup/pkg/proto";
+option go_package = "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto";
 
 // DeletionPlan represents a plan for deleting stale secrets
 message DeletionPlan {
@@ -123,7 +123,7 @@ package correlation
 import (
 	"testing"
 	"github.com/stretchr/testify/assert"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 func TestMatcher_Match(t *testing.T) {
@@ -169,7 +169,7 @@ func TestMatcher_Match(t *testing.T) {
 package correlation
 
 import (
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type MatchingStrategy string
@@ -250,7 +250,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type Engine struct {
@@ -326,7 +326,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type StalenessCalculator struct {
@@ -427,7 +427,7 @@ package planning
 import (
 	"path/filepath"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type ExclusionEngine struct {
@@ -498,8 +498,8 @@ package planning
 import (
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/internal/correlation"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/correlation"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type Planner struct {
@@ -632,9 +632,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/internal/correlation"
-	"github.com/yourusername/vault-secrets-cleanup/internal/planning"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/correlation"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/planning"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -797,8 +797,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/internal/reporting"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/reporting"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"google.golang.org/protobuf/proto"
 )
 
