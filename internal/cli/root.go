@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/config"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/logging"
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/internal/config"
-	"github.com/yourusername/vault-secrets-cleanup/internal/logging"
 )
 
 var (

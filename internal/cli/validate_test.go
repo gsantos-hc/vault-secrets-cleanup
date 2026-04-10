@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/config"
 	api "github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/require"
-	"github.com/yourusername/vault-secrets-cleanup/internal/config"
 )
 
 type fakeValidationClient struct {

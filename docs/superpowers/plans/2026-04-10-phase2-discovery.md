@@ -62,7 +62,7 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "github.com/yourusername/vault-secrets-cleanup/pkg/proto";
+option go_package = "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto";
 
 // Inventory represents a complete snapshot of secrets across Vault
 message Inventory {
@@ -168,9 +168,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/internal/ratelimit"
-	"github.com/yourusername/vault-secrets-cleanup/internal/vault"
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/ratelimit"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/vault"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 type Engine struct {
@@ -268,7 +268,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 func (e *Engine) discoverNamespaces(ctx context.Context) ([]*proto.Namespace, error) {
@@ -361,7 +361,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 func (e *Engine) discoverMounts(ctx context.Context, ns *proto.Namespace) ([]*proto.Mount, error) {
@@ -450,7 +450,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourusername/vault-secrets-cleanup/pkg/proto"
+	"github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 )
 
 func (e *Engine) discoverSecrets(ctx context.Context, ns *proto.Namespace, mount *proto.Mount) ([]*proto.Secret, error) {
@@ -655,9 +655,9 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/internal/discovery"
-	"github.com/yourusername/vault-secrets-cleanup/internal/ratelimit"
-	"github.com/yourusername/vault-secrets-cleanup/internal/vault"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/discovery"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/ratelimit"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/vault"
 	"google.golang.org/protobuf/proto"
 )
 

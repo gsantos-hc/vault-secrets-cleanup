@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/yourusername/vault-secrets-cleanup/internal/cli"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/cli"
 )
 
 func main() {

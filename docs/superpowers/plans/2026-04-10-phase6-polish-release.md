@@ -92,9 +92,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/yourusername/vault-secrets-cleanup/internal/discovery"
-	"github.com/yourusername/vault-secrets-cleanup/internal/ratelimit"
-	"github.com/yourusername/vault-secrets-cleanup/internal/vault"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/discovery"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/ratelimit"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/vault"
 )
 
 func TestDiscovery_Integration(t *testing.T) {
@@ -317,7 +317,7 @@ git commit -m "security: complete security audit and hardening"
 
 ## Install from source
 \`\`\`bash
-git clone https://github.com/yourusername/vault-secrets-cleanup
+git clone https://github.com/gsantos-hc/vault-secrets-cleanup
 cd vault-secrets-cleanup
 make install
 \`\`\`
@@ -325,7 +325,7 @@ make install
 ## Install from release
 \`\`\`bash
 # Download latest release
-curl -LO https://github.com/yourusername/vault-secrets-cleanup/releases/latest/download/vault-secrets-cleanup-linux-amd64
+curl -LO https://github.com/gsantos-hc/vault-secrets-cleanup/releases/latest/download/vault-secrets-cleanup-linux-amd64
 
 # Make executable
 chmod +x vault-secrets-cleanup-linux-amd64

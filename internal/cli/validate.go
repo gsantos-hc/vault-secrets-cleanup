@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/config"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/vault"
 	api "github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
-	"github.com/yourusername/vault-secrets-cleanup/internal/config"
-	"github.com/yourusername/vault-secrets-cleanup/internal/vault"
 )
 
 type validationClient interface {
