@@ -1,5 +1,4 @@
 package discovery
-package discovery
 
 import (
 	"context"
