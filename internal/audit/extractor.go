@@ -44,14 +44,38 @@ func (e *Extractor) Extract(event AuditEvent) *vpb.AccessRecord {
 }
 
 func extractSecretPath(path string) (secretPath, mountPath string, ok bool) {
-	parts := strings.Split(path, "/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) < 2 {
 		return "", "", false
 	}
-	if len(parts) >= 3 && (parts[1] == "data" || parts[1] == "metadata") {
-		return strings.Join(parts[2:], "/"), parts[0] + "/", true
+
+	if apiIdx := kvV2APISegmentIndex(parts); apiIdx > 0 {
+		if apiIdx+1 >= len(parts) {
+			return "", "", false
+		}
+		mountPath = strings.Join(parts[:apiIdx], "/") + "/"
+		secretPath = strings.Join(parts[apiIdx+1:], "/")
+		if secretPath == "" {
+			return "", "", false
+		}
+		return secretPath, mountPath, true
 	}
-	return strings.Join(parts[1:], "/"), parts[0] + "/", true
+
+	secretPath = strings.Join(parts[1:], "/")
+	if secretPath == "" {
+		return "", "", false
+	}
+	return secretPath, parts[0] + "/", true
+}
+
+func kvV2APISegmentIndex(parts []string) int {
+	for i, part := range parts {
+		switch part {
+		case "data", "metadata", "subkeys":
+			return i
+		}
+	}
+	return -1
 }
 
 func determineAccessType(operation string) string {
