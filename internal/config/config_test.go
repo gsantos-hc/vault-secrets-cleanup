@@ -67,6 +67,19 @@ func TestLoad_FlagsOverrideEnv(t *testing.T) {
 	require.Equal(t, "flag-token", cfg.Vault.Token)
 }
 
+func TestLoad_EmptyFlagsDoNotOverrideEnv(t *testing.T) {
+	t.Setenv("VAULT_ADDR", "https://vault.env.example.com")
+	t.Setenv("VAULT_TOKEN", "env-token")
+
+	cfg, err := Load("", map[string]any{
+		"vault.address": "",
+		"vault.token":   "",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "https://vault.env.example.com", cfg.Vault.Address)
+	require.Equal(t, "env-token", cfg.Vault.Token)
+}
+
 func TestValidate_RequiredFields(t *testing.T) {
 	cfg := Config{}
 	err := cfg.Validate()
