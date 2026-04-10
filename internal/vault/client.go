@@ -150,3 +150,44 @@ func (c *Client) ListSecrets(ctx context.Context, path string) (*api.Secret, err
 	}
 	return secret, nil
 }
+
+func (c *Client) Delete(ctx context.Context, secretPath string) error {
+	_, err := c.client.Logical().DeleteWithContext(ctx, secretPath)
+	if err != nil {
+		return fmt.Errorf("delete secret at %s: %w", secretPath, err)
+	}
+	return nil
+}
+
+func (c *Client) KVVersion(ctx context.Context, mountPath string) (int, error) {
+	mounts, err := c.ListMounts(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	normalized := normalizeMountPath(mountPath)
+	mount, ok := mounts[normalized]
+	if !ok {
+		return 0, fmt.Errorf("mount %q not found", normalized)
+	}
+	if mount.Type != "kv" {
+		return 0, fmt.Errorf("mount %q is not kv", normalized)
+	}
+
+	if mount.Options != nil && mount.Options["version"] == "2" {
+		return 2, nil
+	}
+	return 1, nil
+}
+
+func normalizeMountPath(path string) string {
+	trimmed := strings.TrimSpace(path)
+	trimmed = strings.TrimPrefix(trimmed, "/")
+	if trimmed == "" {
+		return ""
+	}
+	if !strings.HasSuffix(trimmed, "/") {
+		trimmed += "/"
+	}
+	return trimmed
+}

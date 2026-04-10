@@ -61,6 +61,7 @@ func init() {
 	rootCmd.AddCommand(newImportCmd())
 	rootCmd.AddCommand(newPlanCmd())
 	rootCmd.AddCommand(newReportCmd())
+	rootCmd.AddCommand(newExecuteCmd())
 }
 
 func Execute() error {
