@@ -92,7 +92,6 @@ func (x *AccessData) GetStats() *AccessStats {
 type AccessRecord struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NamespacePath string                 `protobuf:"bytes,1,opt,name=namespace_path,json=namespacePath,proto3" json:"namespace_path,omitempty"`
-	NamespaceId   string                 `protobuf:"bytes,2,opt,name=namespace_id,json=namespaceId,proto3" json:"namespace_id,omitempty"`
 	MountPath     string                 `protobuf:"bytes,3,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
 	MountAccessor string                 `protobuf:"bytes,4,opt,name=mount_accessor,json=mountAccessor,proto3" json:"mount_accessor,omitempty"`
 	SecretPath    string                 `protobuf:"bytes,5,opt,name=secret_path,json=secretPath,proto3" json:"secret_path,omitempty"`
@@ -136,13 +135,6 @@ func (*AccessRecord) Descriptor() ([]byte, []int) {
 func (x *AccessRecord) GetNamespacePath() string {
 	if x != nil {
 		return x.NamespacePath
-	}
-	return ""
-}
-
-func (x *AccessRecord) GetNamespaceId() string {
-	if x != nil {
-		return x.NamespaceId
 	}
 	return ""
 }
@@ -276,10 +268,9 @@ const file_pkg_proto_access_proto_rawDesc = "" +
 	"created_at\x18\x01 \x01(\tR\tcreatedAt\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12-\n" +
 	"\arecords\x18\x03 \x03(\v2\x13.proto.AccessRecordR\arecords\x12(\n" +
-	"\x05stats\x18\x04 \x01(\v2\x12.proto.AccessStatsR\x05stats\"\xa8\x02\n" +
+	"\x05stats\x18\x04 \x01(\v2\x12.proto.AccessStatsR\x05stats\"\x85\x02\n" +
 	"\fAccessRecord\x12%\n" +
-	"\x0enamespace_path\x18\x01 \x01(\tR\rnamespacePath\x12!\n" +
-	"\fnamespace_id\x18\x02 \x01(\tR\vnamespaceId\x12\x1d\n" +
+	"\x0enamespace_path\x18\x01 \x01(\tR\rnamespacePath\x12\x1d\n" +
 	"\n" +
 	"mount_path\x18\x03 \x01(\tR\tmountPath\x12%\n" +
 	"\x0emount_accessor\x18\x04 \x01(\tR\rmountAccessor\x12\x1f\n" +

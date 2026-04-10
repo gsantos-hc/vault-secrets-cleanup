@@ -45,5 +45,5 @@ func BuildKey(namespace *vpb.Namespace, mount *vpb.Mount, secret *vpb.Secret) st
 		return ""
 	}
 
-	return fmt.Sprintf("%s|%s|%s", namespace.Id, mount.Accessor, secret.Path)
+	return fmt.Sprintf("%s|%s|%s", namespace.Path, mount.Accessor, secret.Path)
 }

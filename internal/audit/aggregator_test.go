@@ -11,7 +11,7 @@ func TestAggregatorAdd(t *testing.T) {
 	agg := NewAggregator()
 
 	agg.Add(&vpb.AccessRecord{
-		NamespaceId:   "ns1",
+		NamespacePath: "team-a",
 		MountAccessor: "kv_1",
 		SecretPath:    "app/config",
 		LastAccessed:  "2024-01-01T00:00:00Z",
@@ -19,7 +19,7 @@ func TestAggregatorAdd(t *testing.T) {
 		AccessCount:   1,
 	})
 	agg.Add(&vpb.AccessRecord{
-		NamespaceId:   "ns1",
+		NamespacePath: "team-a",
 		MountAccessor: "kv_1",
 		SecretPath:    "app/config",
 		LastAccessed:  "2024-01-02T00:00:00Z",
@@ -36,9 +36,9 @@ func TestAggregatorAdd(t *testing.T) {
 
 func TestAggregatorCountUnique(t *testing.T) {
 	agg := NewAggregator()
-	agg.Add(&vpb.AccessRecord{NamespaceId: "ns1", MountAccessor: "a", SecretPath: "a"})
-	agg.Add(&vpb.AccessRecord{NamespaceId: "ns1", MountAccessor: "a", SecretPath: "a"})
-	agg.Add(&vpb.AccessRecord{NamespaceId: "ns1", MountAccessor: "a", SecretPath: "b"})
+	agg.Add(&vpb.AccessRecord{NamespacePath: "team-a", MountAccessor: "a", SecretPath: "a"})
+	agg.Add(&vpb.AccessRecord{NamespacePath: "team-a", MountAccessor: "a", SecretPath: "a"})
+	agg.Add(&vpb.AccessRecord{NamespacePath: "team-a", MountAccessor: "a", SecretPath: "b"})
 
 	assert.Equal(t, 2, agg.Count())
 }

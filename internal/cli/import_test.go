@@ -19,7 +19,6 @@ func TestRunImport_WritesAccessData(t *testing.T) {
 	jsonData := `[
   {
     "namespace_path": "team-a",
-    "namespace_id": "ns1",
     "mount_path": "secret/",
     "mount_accessor": "kv_1",
     "secret_path": "app/config",

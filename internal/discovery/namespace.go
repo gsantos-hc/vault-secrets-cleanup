@@ -8,7 +8,7 @@ import (
 )
 
 func (e *Engine) discoverNamespaces(ctx context.Context) ([]*vpb.Namespace, error) {
-	root := &vpb.Namespace{Path: "", Id: "root", Mounts: []*vpb.Mount{}}
+	root := &vpb.Namespace{Path: "", Mounts: []*vpb.Mount{}}
 
 	mounts, err := e.discoverMounts(ctx, root)
 	if err != nil {
@@ -45,7 +45,7 @@ func (e *Engine) discoverNamespace(ctx context.Context, path string) (*vpb.Names
 		return nil, fmt.Errorf("create namespace client: %w", err)
 	}
 
-	ns := &vpb.Namespace{Path: path, Id: extractNamespaceID(path), Mounts: []*vpb.Mount{}}
+	ns := &vpb.Namespace{Path: path, Mounts: []*vpb.Mount{}}
 	mounts, err := e.discoverMountsWithClient(ctx, nsClient, ns)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover mounts: %w", err)

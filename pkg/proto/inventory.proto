@@ -13,7 +13,6 @@ message Inventory {
 
 message Namespace {
   string path = 1;
-  string id = 2;
   repeated Mount mounts = 3;
 }
 

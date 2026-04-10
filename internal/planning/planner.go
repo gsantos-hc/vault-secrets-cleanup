@@ -44,7 +44,6 @@ func (p *Planner) GeneratePlan(inventory *vpb.Inventory, accessMap map[string]*v
 			for _, secret := range mount.Secrets {
 				action := &vpb.SecretAction{
 					NamespacePath: namespace.Path,
-					NamespaceId:   namespace.Id,
 					MountPath:     mount.Path,
 					MountAccessor: mount.Accessor,
 					SecretPath:    secret.Path,

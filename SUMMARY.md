@@ -116,11 +116,10 @@ vault-secrets-cleanup execute \
 Beyond your initial requirements, the following features are included:
 
 1. **External access data import**: Import access timestamps from log management solutions (Splunk, Elasticsearch, etc.)
-2. **Namespace ID tracking**: Track both namespace paths and IDs for accurate correlation
-3. **Configurable matching strategies**:
-   - Strict: Match by namespace ID + mount accessor + secret path
-   - Path-based: Match by namespace path + mount path + secret path
-   - Hybrid: Try strict first, fall back to path-based
+2. **Configurable matching strategies**:
+  - Strict: Match by namespace path + mount accessor + secret path
+  - Path-based: Match by namespace path + mount path + secret path
+  - Hybrid: Try strict first, fall back to path-based
 4. **Incremental operations**: Update inventory/access data without full re-scan
 2. **Per-namespace staleness**: Different retention periods for prod vs dev
 3. **Compression support**: Handle gzip/bzip2 audit logs

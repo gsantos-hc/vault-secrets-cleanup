@@ -21,7 +21,6 @@ func TestRunPlan_WritesDeletionPlan(t *testing.T) {
 
 	inventory := &vpb.Inventory{Namespaces: []*vpb.Namespace{{
 		Path: "prod/app",
-		Id:   "ns_1",
 		Mounts: []*vpb.Mount{{
 			Path:     "secret/",
 			Accessor: "kv_1",
@@ -30,7 +29,6 @@ func TestRunPlan_WritesDeletionPlan(t *testing.T) {
 	}}}
 	access := &vpb.AccessData{Records: []*vpb.AccessRecord{{
 		NamespacePath: "prod/app",
-		NamespaceId:   "ns_1",
 		MountPath:     "secret/",
 		MountAccessor: "kv_1",
 		SecretPath:    "old/config",

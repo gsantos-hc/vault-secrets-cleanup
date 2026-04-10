@@ -92,7 +92,6 @@ func (x *Inventory) GetStats() *InventoryStats {
 type Namespace struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	Mounts        []*Mount               `protobuf:"bytes,3,rep,name=mounts,proto3" json:"mounts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -131,13 +130,6 @@ func (*Namespace) Descriptor() ([]byte, []int) {
 func (x *Namespace) GetPath() string {
 	if x != nil {
 		return x.Path
-	}
-	return ""
-}
-
-func (x *Namespace) GetId() string {
-	if x != nil {
-		return x.Id
 	}
 	return ""
 }
@@ -365,10 +357,9 @@ const file_pkg_proto_inventory_proto_rawDesc = "" +
 	"\n" +
 	"namespaces\x18\x03 \x03(\v2\x10.proto.NamespaceR\n" +
 	"namespaces\x12+\n" +
-	"\x05stats\x18\x04 \x01(\v2\x15.proto.InventoryStatsR\x05stats\"U\n" +
+	"\x05stats\x18\x04 \x01(\v2\x15.proto.InventoryStatsR\x05stats\"E\n" +
 	"\tNamespace\x12\x12\n" +
-	"\x04path\x18\x01 \x01(\tR\x04path\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\x12$\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12$\n" +
 	"\x06mounts\x18\x03 \x03(\v2\f.proto.MountR\x06mounts\"\x8e\x01\n" +
 	"\x05Mount\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x1a\n" +

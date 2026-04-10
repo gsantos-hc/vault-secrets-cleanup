@@ -179,7 +179,6 @@ func (x *PlanConfig) GetExclusionPatterns() []string {
 type SecretAction struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	NamespacePath   string                 `protobuf:"bytes,1,opt,name=namespace_path,json=namespacePath,proto3" json:"namespace_path,omitempty"`
-	NamespaceId     string                 `protobuf:"bytes,2,opt,name=namespace_id,json=namespaceId,proto3" json:"namespace_id,omitempty"`
 	MountPath       string                 `protobuf:"bytes,3,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
 	MountAccessor   string                 `protobuf:"bytes,4,opt,name=mount_accessor,json=mountAccessor,proto3" json:"mount_accessor,omitempty"`
 	SecretPath      string                 `protobuf:"bytes,5,opt,name=secret_path,json=secretPath,proto3" json:"secret_path,omitempty"`
@@ -227,13 +226,6 @@ func (*SecretAction) Descriptor() ([]byte, []int) {
 func (x *SecretAction) GetNamespacePath() string {
 	if x != nil {
 		return x.NamespacePath
-	}
-	return ""
-}
-
-func (x *SecretAction) GetNamespaceId() string {
-	if x != nil {
-		return x.NamespaceId
 	}
 	return ""
 }
@@ -412,10 +404,9 @@ const file_pkg_proto_plan_proto_rawDesc = "" +
 	"\x10staleness_period\x18\x01 \x01(\tR\x0fstalenessPeriod\x12+\n" +
 	"\x11matching_strategy\x18\x02 \x01(\tR\x10matchingStrategy\x12'\n" +
 	"\x0finclude_unknown\x18\x03 \x01(\bR\x0eincludeUnknown\x12-\n" +
-	"\x12exclusion_patterns\x18\x04 \x03(\tR\x11exclusionPatterns\"\x91\x03\n" +
+	"\x12exclusion_patterns\x18\x04 \x03(\tR\x11exclusionPatterns\"\xee\x02\n" +
 	"\fSecretAction\x12%\n" +
-	"\x0enamespace_path\x18\x01 \x01(\tR\rnamespacePath\x12!\n" +
-	"\fnamespace_id\x18\x02 \x01(\tR\vnamespaceId\x12\x1d\n" +
+	"\x0enamespace_path\x18\x01 \x01(\tR\rnamespacePath\x12\x1d\n" +
 	"\n" +
 	"mount_path\x18\x03 \x01(\tR\tmountPath\x12%\n" +
 	"\x0emount_accessor\x18\x04 \x01(\tR\rmountAccessor\x12\x1f\n" +

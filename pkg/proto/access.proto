@@ -13,7 +13,6 @@ message AccessData {
 
 message AccessRecord {
   string namespace_path = 1;
-  string namespace_id = 2;
   string mount_path = 3;
   string mount_accessor = 4;
   string secret_path = 5;

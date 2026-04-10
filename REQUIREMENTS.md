@@ -33,7 +33,6 @@ A Go-based CLI tool for HashiCorp Vault Enterprise that helps DevOps and Platfor
 **FR-1.1.4**: Export secrets inventory
 - Generate structured inventory file with:
   - Namespace path
-  - Namespace ID
   - Mount path
   - Mount accessor
   - Secret path (full path)
@@ -52,7 +51,7 @@ A Go-based CLI tool for HashiCorp Vault Enterprise that helps DevOps and Platfor
 - Identify read operations on KV secrets
 - Identify write/update operations on KV secrets
 - Identify delete operations on KV secrets
-- Extract timestamp, namespace path, namespace ID, mount path, mount accessor, and secret path
+- Extract timestamp, namespace path, mount path, mount accessor, and secret path
 - Handle both KV v1 and KV v2 API paths
 
 **FR-1.2.3**: Determine last access timestamps
@@ -64,7 +63,6 @@ A Go-based CLI tool for HashiCorp Vault Enterprise that helps DevOps and Platfor
 **FR-1.2.4**: Export access data
 - Generate structured access file with:
   - Namespace path
-  - Namespace ID
   - Mount path
   - Mount accessor
   - Secret path
@@ -77,7 +75,6 @@ A Go-based CLI tool for HashiCorp Vault Enterprise that helps DevOps and Platfor
 - Support importing access data from external sources (e.g., log management solutions)
 - Accept JSON file with array of access records containing:
   - `namespace_path` (required)
-  - `namespace_id` (optional)
   - `mount_path` (required)
   - `mount_accessor` (optional)
   - `secret_path` (required)
@@ -93,11 +90,11 @@ A Go-based CLI tool for HashiCorp Vault Enterprise that helps DevOps and Platfor
 **FR-1.3.1**: Correlate inventory and access data
 - Match secrets from inventory with access records
 - Support configurable matching strategies:
-  - **Strict matching** (default): Match by namespace ID + mount accessor + secret path
-  - **Path-based matching**: Match by namespace path + mount path + secret path (ignores IDs/accessors)
+  - **Strict matching** (default): Match by namespace path + mount accessor + secret path
+  - **Path-based matching**: Match by namespace path + mount path + secret path (ignores accessors)
 - User-configurable via CLI flag or configuration file
 - Log matching strategy used and any fallback occurrences
-- Handle cases where namespace ID or mount accessor is missing in access data
+- Handle cases where mount accessor is missing in access data
 
 **FR-1.3.2**: Apply staleness criteria
 - User-configurable staleness period (e.g., 365 days)
@@ -333,12 +330,11 @@ message SecretInventory {
 
 message SecretEntry {
   string namespace_path = 1;
-  string namespace_id = 2;
-  string mount_path = 3;
-  string mount_accessor = 4;
-  string secret_path = 5;
-  string kv_version = 6;
-  int64 discovered_at = 7;
+  string mount_path = 2;
+  string mount_accessor = 3;
+  string secret_path = 4;
+  string kv_version = 5;
+  int64 discovered_at = 6;
 }
 ```
 
@@ -672,7 +668,7 @@ retry:
 # Correlation configuration
 correlation:
   # Matching strategy: strict, path-based, or hybrid
-  # - strict: Match by namespace ID + mount accessor + secret path (default)
+  # - strict: Match by namespace path + mount accessor + secret path (default)
   # - path-based: Match by namespace path + mount path + secret path
   matching_strategy: strict
 
@@ -967,7 +963,6 @@ vault-secrets-cleanup discover \
 # [
 #   {
 #     "namespace_path": "prod/app1",
-#     "namespace_id": "ns_abc123",
 #     "mount_path": "secret",
 #     "mount_accessor": "kv_xyz789",
 #     "secret_path": "database/credentials",

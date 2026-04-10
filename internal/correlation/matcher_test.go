@@ -9,11 +9,10 @@ import (
 
 func TestMatcherMatch(t *testing.T) {
 	secret := &vpb.Secret{Path: "app/config"}
-	namespace := &vpb.Namespace{Path: "prod/app", Id: "ns_1"}
+	namespace := &vpb.Namespace{Path: "prod/app"}
 	mount := &vpb.Mount{Path: "secret/", Accessor: "kv_1"}
 	access := &vpb.AccessRecord{
 		NamespacePath: "prod/app",
-		NamespaceId:   "ns_1",
 		MountPath:     "secret/",
 		MountAccessor: "kv_1",
 		SecretPath:    "app/config",
@@ -28,9 +27,19 @@ func TestMatcherMatch(t *testing.T) {
 		matcher := NewMatcher(MatchingStrategyStrict)
 		modified := &vpb.AccessRecord{
 			NamespacePath: access.NamespacePath,
-			NamespaceId:   access.NamespaceId,
 			MountPath:     access.MountPath,
 			MountAccessor: "kv_2",
+			SecretPath:    access.SecretPath,
+		}
+		require.False(t, matcher.Match(secret, namespace, mount, modified))
+	})
+
+	t.Run("strict match fails with different namespace path", func(t *testing.T) {
+		matcher := NewMatcher(MatchingStrategyStrict)
+		modified := &vpb.AccessRecord{
+			NamespacePath: "prod/other",
+			MountPath:     access.MountPath,
+			MountAccessor: access.MountAccessor,
 			SecretPath:    access.SecretPath,
 		}
 		require.False(t, matcher.Match(secret, namespace, mount, modified))
@@ -40,7 +49,6 @@ func TestMatcherMatch(t *testing.T) {
 		matcher := NewMatcher(MatchingStrategyPathBased)
 		modified := &vpb.AccessRecord{
 			NamespacePath: access.NamespacePath,
-			NamespaceId:   "",
 			MountPath:     access.MountPath,
 			MountAccessor: "",
 			SecretPath:    access.SecretPath,

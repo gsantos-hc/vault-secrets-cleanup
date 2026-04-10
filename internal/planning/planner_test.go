@@ -17,7 +17,6 @@ func TestPlannerGeneratePlan(t *testing.T) {
 
 	inv := &vpb.Inventory{Namespaces: []*vpb.Namespace{{
 		Path: "prod/app",
-		Id:   "ns_1",
 		Mounts: []*vpb.Mount{{
 			Path:     "secret/",
 			Accessor: "kv_1",
@@ -31,7 +30,7 @@ func TestPlannerGeneratePlan(t *testing.T) {
 
 	staleAccess := &vpb.AccessRecord{LastAccessed: time.Now().UTC().AddDate(0, 0, -90).Format(time.RFC3339)}
 	accessMap := map[string]*vpb.AccessRecord{
-		"ns_1|kv_1|old/config": staleAccess,
+		"prod/app|kv_1|old/config": staleAccess,
 	}
 
 	plan, err := planner.GeneratePlan(inv, accessMap, &vpb.PlanConfig{StalenessPeriod: "30d"})

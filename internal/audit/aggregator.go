@@ -58,5 +58,5 @@ func (a *Aggregator) Count() int {
 }
 
 func makeKey(record *vpb.AccessRecord) string {
-	return record.NamespaceId + "|" + record.MountAccessor + "|" + record.SecretPath
+	return record.NamespacePath + "|" + record.MountAccessor + "|" + record.SecretPath
 }

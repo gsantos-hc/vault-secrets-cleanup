@@ -3,7 +3,6 @@ package discovery
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gsantos-hc/vault-secrets-cleanup/internal/ratelimit"
@@ -116,12 +115,4 @@ func (e *Engine) calculateStats(inventory *vpb.Inventory) {
 		}
 	}
 	inventory.Stats = stats
-}
-
-func extractNamespaceID(path string) string {
-	trimmed := strings.Trim(path, "/")
-	if trimmed == "" {
-		return "root"
-	}
-	return strings.ReplaceAll(trimmed, "/", "_")
 }

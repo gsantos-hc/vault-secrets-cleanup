@@ -13,7 +13,6 @@ func TestEngineCorrelate(t *testing.T) {
 		Namespaces: []*vpb.Namespace{
 			{
 				Path: "prod/app",
-				Id:   "ns_1",
 				Mounts: []*vpb.Mount{
 					{
 						Path:     "secret/",
@@ -31,7 +30,6 @@ func TestEngineCorrelate(t *testing.T) {
 		Records: []*vpb.AccessRecord{
 			{
 				NamespacePath: "prod/app",
-				NamespaceId:   "ns_1",
 				MountPath:     "secret/",
 				MountAccessor: "kv_1",
 				SecretPath:    "app/config",

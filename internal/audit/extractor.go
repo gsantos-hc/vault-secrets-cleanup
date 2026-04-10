@@ -33,7 +33,6 @@ func (e *Extractor) Extract(event AuditEvent) *vpb.AccessRecord {
 
 	return &vpb.AccessRecord{
 		NamespacePath: event.Request.Namespace.Path,
-		NamespaceId:   event.Request.Namespace.ID,
 		MountPath:     mountPath,
 		MountAccessor: event.Request.MountAccessor,
 		SecretPath:    secretPath,
