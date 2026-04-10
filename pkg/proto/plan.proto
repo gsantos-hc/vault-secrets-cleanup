@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto";
+
+// DeletionPlan represents a plan for deleting stale secrets.
+message DeletionPlan {
+  string created_at = 1;
+  string inventory_file = 2;
+  string access_file = 3;
+  PlanConfig config = 4;
+  repeated SecretAction actions = 5;
+  PlanStats stats = 6;
+}
+
+// PlanConfig contains the configuration used to generate the plan.
+message PlanConfig {
+  string staleness_period = 1;
+  string matching_strategy = 2;
+  bool include_unknown = 3;
+  repeated string exclusion_patterns = 4;
+}
+
+// SecretAction represents an action to take on a secret.
+message SecretAction {
+  string namespace_path = 1;
+  string namespace_id = 2;
+  string mount_path = 3;
+  string mount_accessor = 4;
+  string secret_path = 5;
+  string category = 6;
+  string reason = 7;
+  string last_accessed = 8;
+  int32 days_since_access = 9;
+  string status = 10;
+  string deleted_at = 11;
+  string error = 12;
+}
+
+// PlanStats contains summary statistics.
+message PlanStats {
+  int32 total_secrets = 1;
+  int32 stale_count = 2;
+  int32 unknown_count = 3;
+  int32 active_count = 4;
+  int32 excluded_count = 5;
+  int32 to_delete_count = 6;
+}

@@ -3,7 +3,9 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -27,8 +29,8 @@ type RateLimitConfig struct {
 }
 
 type StalenessConfig struct {
-	DefaultDays int            `mapstructure:"default_days"`
-	Namespaces  map[string]int `mapstructure:"namespaces"`
+	DefaultPeriod string            `mapstructure:"default_period"`
+	Namespaces    map[string]string `mapstructure:"namespaces"`
 }
 
 type ExclusionsConfig struct {
@@ -48,7 +50,7 @@ func Load(configPath string, flagValues map[string]any) (*Config, error) {
 
 	v.SetDefault("rate_limit.requests_per_second", 100.0)
 	v.SetDefault("rate_limit.burst", 100)
-	v.SetDefault("staleness.default_days", 365)
+	v.SetDefault("staleness.default_period", "365d")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.format", "text")
 
@@ -97,8 +99,14 @@ func (c Config) Validate() error {
 	if c.RateLimit.RequestsPerSecond <= 0 {
 		errs = append(errs, errors.New("rate_limit.requests_per_second must be > 0"))
 	}
-	if c.Staleness.DefaultDays <= 0 {
-		errs = append(errs, errors.New("staleness.default_days must be > 0"))
+	if _, err := parsePeriod(c.Staleness.DefaultPeriod); err != nil {
+		errs = append(errs, fmt.Errorf("staleness.default_period must be valid duration: %w", err))
+	}
+
+	for ns, period := range c.Staleness.Namespaces {
+		if _, err := parsePeriod(period); err != nil {
+			errs = append(errs, fmt.Errorf("staleness.namespaces[%s] must be valid duration: %w", ns, err))
+		}
 	}
 
 	if len(errs) > 0 {
@@ -106,4 +114,30 @@ func (c Config) Validate() error {
 	}
 
 	return nil
+}
+
+func parsePeriod(raw string) (time.Duration, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return 0, errors.New("period cannot be empty")
+	}
+
+	if strings.HasSuffix(value, "d") {
+		daysRaw := strings.TrimSuffix(value, "d")
+		days, err := strconv.Atoi(daysRaw)
+		if err != nil || days <= 0 {
+			return 0, fmt.Errorf("invalid day period %q", raw)
+		}
+		return time.Duration(days) * 24 * time.Hour, nil
+	}
+
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, err
+	}
+	if duration <= 0 {
+		return 0, fmt.Errorf("duration must be > 0")
+	}
+
+	return duration, nil
 }

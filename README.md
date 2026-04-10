@@ -63,7 +63,7 @@ vault-secrets-cleanup analyze \
 vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
-  --staleness-days 365 \
+  --staleness-period 365d \
   --output deletion-plan.pb
 
 # 6. Review plan
@@ -119,7 +119,7 @@ rate_limit:
   deletion: 10
 
 staleness:
-  default_days: 365
+  default_period: 365d
   namespaces:
     prod/*: 730    # 2 years for production
     dev/*: 90      # 90 days for dev

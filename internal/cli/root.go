@@ -59,6 +59,8 @@ func init() {
 	rootCmd.AddCommand(newDiscoverCmd())
 	rootCmd.AddCommand(newAnalyzeCmd())
 	rootCmd.AddCommand(newImportCmd())
+	rootCmd.AddCommand(newPlanCmd())
+	rootCmd.AddCommand(newReportCmd())
 }
 
 func Execute() error {
