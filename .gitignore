@@ -6,6 +6,9 @@ bin/
 *.test
 coverage.out
 
+# Node packages
+node_modules/
+
 # Data files
 /*.pb
 
