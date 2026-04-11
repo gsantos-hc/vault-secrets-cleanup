@@ -9,11 +9,12 @@ import (
 )
 
 var (
-	configPath string
-	vaultAddr  string
-	vaultToken string
-	loadedCfg  *config.Config
-	loadedLog  *logging.Logger
+	configPath   string
+	vaultAddr    string
+	vaultToken   string
+	loadedCfg    *config.Config
+	loadedLog    *logging.Logger
+	buildVersion = "dev"
 )
 
 var rootCmd = &cobra.Command{
@@ -52,6 +53,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.Version = buildVersion
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "Path to YAML configuration file")
 	rootCmd.PersistentFlags().StringVar(&vaultAddr, "vault-addr", "", "Vault address (overrides config/env)")
 	rootCmd.PersistentFlags().StringVar(&vaultToken, "vault-token", "", "Vault token (overrides config/env)")
@@ -78,4 +80,12 @@ func GetConfig() *config.Config {
 
 func GetLogger() *logging.Logger {
 	return loadedLog
+}
+
+func SetBuildVersion(version string) {
+	if version == "" {
+		return
+	}
+	buildVersion = version
+	rootCmd.Version = version
 }

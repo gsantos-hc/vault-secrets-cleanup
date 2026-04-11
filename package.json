@@ -1,0 +1,19 @@
+{
+  "name": "vault-secrets-cleanup-release",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Release tooling configuration for vault-secrets-cleanup",
+  "scripts": {
+    "release": "commit-and-tag-version"
+  },
+  "devDependencies": {
+    "commit-and-tag-version": "^12.6.0"
+  },
+  "commit-and-tag-version": {
+    "tagPrefix": "v",
+    "releaseCommitMessageFormat": "chore(release): {{currentTag}}",
+    "skip": {
+      "changelog": false
+    }
+  }
+}
