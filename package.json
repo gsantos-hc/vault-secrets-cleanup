@@ -1,6 +1,7 @@
 {
   "name": "vault-secrets-cleanup-release",
   "private": true,
+  "version": "0.1.0",
   "description": "Release tooling configuration for vault-secrets-cleanup",
   "devDependencies": {
     "conventional-changelog-cli": "^5.0.0"
