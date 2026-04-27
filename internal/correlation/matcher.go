@@ -34,8 +34,7 @@ func (m *Matcher) Match(secret *vpb.Secret, namespace *vpb.Namespace, mount *vpb
 	case MatchingStrategyAccessor:
 		fallthrough
 	default:
-		return namespace.Path == access.NamespacePath &&
-			mount.Accessor == access.MountAccessor &&
+		return mount.Accessor == access.MountAccessor &&
 			secret.Path == access.SecretPath
 	}
 }
