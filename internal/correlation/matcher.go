@@ -5,7 +5,7 @@ import vpb "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 type MatchingStrategy string
 
 const (
-	MatchingStrategyStrict    MatchingStrategy = "strict"
+	MatchingStrategyAccessor  MatchingStrategy = "accessor"
 	MatchingStrategyPathBased MatchingStrategy = "path-based"
 )
 
@@ -15,7 +15,7 @@ type Matcher struct {
 
 func NewMatcher(strategy MatchingStrategy) *Matcher {
 	if strategy == "" {
-		strategy = MatchingStrategyStrict
+		strategy = MatchingStrategyAccessor
 	}
 
 	return &Matcher{strategy: strategy}
@@ -31,7 +31,7 @@ func (m *Matcher) Match(secret *vpb.Secret, namespace *vpb.Namespace, mount *vpb
 		return namespace.Path == access.NamespacePath &&
 			mount.Path == access.MountPath &&
 			secret.Path == access.SecretPath
-	case MatchingStrategyStrict:
+	case MatchingStrategyAccessor:
 		fallthrough
 	default:
 		return namespace.Path == access.NamespacePath &&

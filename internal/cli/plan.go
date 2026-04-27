@@ -36,7 +36,7 @@ func newPlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opts.accessData, "access-data", "access.pb", "Access protobuf file")
 	cmd.Flags().StringVarP(&opts.output, "output", "o", "deletion-plan.pb", "Output plan protobuf file")
 	cmd.Flags().StringVar(&opts.stalenessPeriod, "staleness-period", "", "Override staleness threshold (examples: 5m, 24h, 365d)")
-	cmd.Flags().StringVar(&opts.matchingStrategy, "matching-strategy", "strict", "Matching strategy (strict or path-based)")
+	cmd.Flags().StringVar(&opts.matchingStrategy, "matching-strategy", "accessor", "Matching strategy (accessor=mount accessor+secret path, path-based=namespace+mount+secret path)")
 	cmd.Flags().BoolVar(&opts.includeUnknown, "include-unknown", false, "Include unknown-access secrets in deletion count")
 
 	return cmd
@@ -67,6 +67,9 @@ func runPlan(ctx context.Context, opts planOptions, cfg *config.Config) error {
 	}
 
 	strategy := correlation.MatchingStrategy(opts.matchingStrategy)
+	if strategy != correlation.MatchingStrategyAccessor && strategy != correlation.MatchingStrategyPathBased {
+		return fmt.Errorf("unknown matching strategy %q: must be one of accessor, path-based", opts.matchingStrategy)
+	}
 	engine := correlation.NewEngine(correlation.Config{MatchingStrategy: strategy})
 	accessMap, err := engine.Correlate(inventory, accessData)
 	if err != nil {

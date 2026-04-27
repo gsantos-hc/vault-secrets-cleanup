@@ -90,7 +90,7 @@ A Go-based CLI tool for HashiCorp Vault Enterprise that helps DevOps and Platfor
 **FR-1.3.1**: Correlate inventory and access data
 - Match secrets from inventory with access records
 - Support configurable matching strategies:
-  - **Strict matching** (default): Match by namespace path + mount accessor + secret path
+  - **Accessor matching** (default): Match by mount accessor + secret path (namespace path ignored, stable across namespace moves)
   - **Path-based matching**: Match by namespace path + mount path + secret path (ignores accessors)
 - User-configurable via CLI flag or configuration file
 - Log matching strategy used and any fallback occurrences
@@ -593,7 +593,7 @@ vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
   --staleness-period 365d \
-  --matching-strategy strict \
+  --matching-strategy accessor \
   --exclude-patterns exclusions.txt \
   --output deletion-plan.pb
 ```
@@ -667,10 +667,10 @@ retry:
 
 # Correlation configuration
 correlation:
-  # Matching strategy: strict, path-based, or hybrid
-  # - strict: Match by namespace path + mount accessor + secret path (default)
+  # Matching strategy: accessor or path-based
+  # - accessor: Match by mount accessor + secret path (default, stable across namespace moves)
   # - path-based: Match by namespace path + mount path + secret path
-  matching_strategy: strict
+  matching_strategy: accessor
 
 # Staleness configuration
 staleness:
@@ -978,7 +978,7 @@ vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
   --staleness-period 365d \
-  --matching-strategy strict \
+  --matching-strategy accessor \
   --output deletion-plan.pb
 
 # 5. Review plan
