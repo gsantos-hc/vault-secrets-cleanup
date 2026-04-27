@@ -1,11 +1,14 @@
 BINARY_NAME=vault-secrets-cleanup
 BIN_DIR=bin
+AUTO_VERSION=$(shell git describe --tags --match 'v*' --always --dirty 2>/dev/null || echo v0.0.0-local)
+VERSION ?= $(AUTO_VERSION)
 
 .PHONY: build test test-integration test-e2e bench clean proto
 
 build:
+	@echo "Using version: $(VERSION)"
 	mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/vault-secrets-cleanup
+	go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/vault-secrets-cleanup
 
 test:
 	go test ./...
