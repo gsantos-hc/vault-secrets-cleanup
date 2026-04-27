@@ -97,7 +97,7 @@ vault-secrets-cleanup plan \
   --inventory inventory.pb \
   --access-data access.pb \
   --staleness-days 365 \
-  --matching-strategy strict \
+  --matching-strategy accessor \
   --output deletion-plan.pb
 
 # 4. Review plan
@@ -117,9 +117,8 @@ Beyond your initial requirements, the following features are included:
 
 1. **External access data import**: Import access timestamps from log management solutions (Splunk, Elasticsearch, etc.)
 2. **Configurable matching strategies**:
-  - Strict: Match by namespace path + mount accessor + secret path
+  - Accessor: Match by mount accessor + secret path (namespace-agnostic / stable across namespace moves)
   - Path-based: Match by namespace path + mount path + secret path
-  - Hybrid: Try strict first, fall back to path-based
 4. **Incremental operations**: Update inventory/access data without full re-scan
 2. **Per-namespace staleness**: Different retention periods for prod vs dev
 3. **Compression support**: Handle gzip/bzip2 audit logs

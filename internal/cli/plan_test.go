@@ -48,7 +48,7 @@ func TestRunPlan_WritesDeletionPlan(t *testing.T) {
 		accessData:       accessPath,
 		output:           outputPath,
 		stalenessPeriod:  "30d",
-		matchingStrategy: "strict",
+		matchingStrategy: "accessor",
 		includeUnknown:   false,
 	}, &config.Config{Staleness: config.StalenessConfig{DefaultPeriod: "365d"}})
 	require.NoError(t, err)
@@ -63,4 +63,36 @@ func TestRunPlan_WritesDeletionPlan(t *testing.T) {
 	require.Equal(t, "30d", plan.Config.StalenessPeriod)
 	require.Equal(t, inventoryPath, plan.InventoryFile)
 	require.Equal(t, accessPath, plan.AccessFile)
+}
+
+func TestRunPlan_RejectsUnknownMatchingStrategy(t *testing.T) {
+	dir := t.TempDir()
+	inventoryPath := filepath.Join(dir, "inventory.pb")
+	accessPath := filepath.Join(dir, "access.pb")
+
+	inventory := &vpb.Inventory{Namespaces: []*vpb.Namespace{{
+		Path: "prod/app",
+		Mounts: []*vpb.Mount{{
+			Path: "secret/", Accessor: "kv_1",
+			Secrets: []*vpb.Secret{{Path: "config"}},
+		}},
+	}}}
+	access := &vpb.AccessData{}
+
+	invBytes, err := gproto.Marshal(inventory)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(inventoryPath, invBytes, 0o644))
+
+	accBytes, err := gproto.Marshal(access)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(accessPath, accBytes, 0o644))
+
+	err = runPlan(context.Background(), planOptions{
+		inventory:        inventoryPath,
+		accessData:       accessPath,
+		output:           filepath.Join(dir, "plan.pb"),
+		matchingStrategy: "strict",
+	}, &config.Config{Staleness: config.StalenessConfig{DefaultPeriod: "365d"}})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "strict")
 }

@@ -18,13 +18,13 @@ func TestMatcherMatch(t *testing.T) {
 		SecretPath:    "app/config",
 	}
 
-	t.Run("strict match succeeds", func(t *testing.T) {
-		matcher := NewMatcher(MatchingStrategyStrict)
+	t.Run("accessor match succeeds", func(t *testing.T) {
+		matcher := NewMatcher(MatchingStrategyAccessor)
 		require.True(t, matcher.Match(secret, namespace, mount, access))
 	})
 
-	t.Run("strict match fails with different accessor", func(t *testing.T) {
-		matcher := NewMatcher(MatchingStrategyStrict)
+	t.Run("accessor match fails with different accessor", func(t *testing.T) {
+		matcher := NewMatcher(MatchingStrategyAccessor)
 		modified := &vpb.AccessRecord{
 			NamespacePath: access.NamespacePath,
 			MountPath:     access.MountPath,
@@ -34,13 +34,24 @@ func TestMatcherMatch(t *testing.T) {
 		require.False(t, matcher.Match(secret, namespace, mount, modified))
 	})
 
-	t.Run("strict match fails with different namespace path", func(t *testing.T) {
-		matcher := NewMatcher(MatchingStrategyStrict)
+	t.Run("accessor match succeeds despite different namespace path", func(t *testing.T) {
+		matcher := NewMatcher(MatchingStrategyAccessor)
 		modified := &vpb.AccessRecord{
 			NamespacePath: "prod/other",
 			MountPath:     access.MountPath,
 			MountAccessor: access.MountAccessor,
 			SecretPath:    access.SecretPath,
+		}
+		require.True(t, matcher.Match(secret, namespace, mount, modified))
+	})
+
+	t.Run("accessor match fails with different secret path", func(t *testing.T) {
+		matcher := NewMatcher(MatchingStrategyAccessor)
+		modified := &vpb.AccessRecord{
+			NamespacePath: "prod/other",
+			MountPath:     access.MountPath,
+			MountAccessor: access.MountAccessor,
+			SecretPath:    "app/other",
 		}
 		require.False(t, matcher.Match(secret, namespace, mount, modified))
 	})
@@ -54,5 +65,16 @@ func TestMatcherMatch(t *testing.T) {
 			SecretPath:    access.SecretPath,
 		}
 		require.True(t, matcher.Match(secret, namespace, mount, modified))
+	})
+
+	t.Run("path based match fails with different namespace path", func(t *testing.T) {
+		matcher := NewMatcher(MatchingStrategyPathBased)
+		modified := &vpb.AccessRecord{
+			NamespacePath: "prod/other",
+			MountPath:     access.MountPath,
+			MountAccessor: access.MountAccessor,
+			SecretPath:    access.SecretPath,
+		}
+		require.False(t, matcher.Match(secret, namespace, mount, modified))
 	})
 }

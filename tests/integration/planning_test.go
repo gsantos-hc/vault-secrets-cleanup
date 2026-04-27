@@ -51,7 +51,7 @@ func TestCorrelationAndPlanningIntegration(t *testing.T) {
 		},
 	}
 
-	engine := correlation.NewEngine(correlation.Config{MatchingStrategy: correlation.MatchingStrategyStrict})
+	engine := correlation.NewEngine(correlation.Config{MatchingStrategy: correlation.MatchingStrategyAccessor})
 	accessMap, err := engine.Correlate(inventory, accessData)
 	require.NoError(t, err)
 
