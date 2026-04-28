@@ -30,6 +30,17 @@ type Config struct {
 	NamespacePrefix string
 	MountPrefix     string
 	DryRun          bool
+	OnProgress      func(ProgressSnapshot)
+}
+
+type ProgressSnapshot struct {
+	Phase             string
+	NamespacesCreated int
+	PlannedNamespaces int
+	MountsCreated     int
+	PlannedMounts     int
+	SecretsWritten    int
+	TotalSecrets      int
 }
 
 type Result struct {
@@ -74,6 +85,7 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 	}
 
 	if e.cfg.DryRun {
+		e.emitProgress("complete", res)
 		return res, nil
 	}
 
@@ -89,6 +101,7 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 			return res, err
 		}
 		res.NamespacesCreated++
+		e.emitProgress("namespaces", res)
 
 		for _, mount := range ns.Mounts {
 			mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
@@ -101,6 +114,7 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 				return res, err
 			}
 			res.MountsCreated++
+			e.emitProgress("mounts", res)
 
 			for i := 0; i < mount.SecretCount; i++ {
 				secretName := fmt.Sprintf("secret-%06d", i+1)
@@ -113,11 +127,28 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 					return res, err
 				}
 				res.SecretsWritten++
+				e.emitProgress("secrets", res)
 			}
 		}
 	}
 
+	e.emitProgress("complete", res)
 	return res, nil
+}
+
+func (e *Engine) emitProgress(phase string, res Result) {
+	if e.cfg.OnProgress == nil {
+		return
+	}
+	e.cfg.OnProgress(ProgressSnapshot{
+		Phase:             phase,
+		NamespacesCreated: res.NamespacesCreated,
+		PlannedNamespaces: res.PlannedNamespaces,
+		MountsCreated:     res.MountsCreated,
+		PlannedMounts:     res.PlannedMounts,
+		SecretsWritten:    res.SecretsWritten,
+		TotalSecrets:      res.PlannedSecrets,
+	})
 }
 
 func (e *Engine) wait(ctx context.Context) error {

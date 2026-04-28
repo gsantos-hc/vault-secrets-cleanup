@@ -96,3 +96,26 @@ func TestEngineRun_DryRunWritesNothing(t *testing.T) {
 	require.Empty(t, fake.mounts)
 	require.Empty(t, fake.writes)
 }
+
+func TestEngineRun_EmitsProgress(t *testing.T) {
+	fake := &fakeVaultWriter{}
+	events := 0
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 2,
+		TotalSecrets:   5,
+		KV2Probability: 0.9,
+		RandomSeed:     123,
+		OnProgress: func(snapshot ProgressSnapshot) {
+			events++
+			require.Equal(t, 5, snapshot.TotalSecrets)
+		},
+	})
+
+	_, err := engine.Run(context.Background())
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, events, 1)
+}
