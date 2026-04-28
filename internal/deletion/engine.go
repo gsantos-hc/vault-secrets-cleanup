@@ -21,8 +21,17 @@ type Engine struct {
 	rateLimiter    *ratelimit.Limiter
 	circuitBreaker *CircuitBreaker
 	progress       *ProgressTracker
+	onProgress     func(ProgressSnapshot)
 	planFile       string
 	dryRun         bool
+}
+
+type ProgressSnapshot struct {
+	Completed  int
+	Failed     int
+	Total      int
+	Percentage float64
+	ETA        time.Duration
 }
 
 type Config struct {
@@ -33,6 +42,7 @@ type Config struct {
 	CircuitBreaker *CircuitBreaker
 	DryRun         bool
 	PlanFile       string
+	OnProgress     func(ProgressSnapshot)
 }
 
 func NewEngine(config Config) *Engine {
@@ -54,6 +64,7 @@ func NewEngine(config Config) *Engine {
 		executor:       executor,
 		rateLimiter:    config.RateLimiter,
 		circuitBreaker: cb,
+		onProgress:     config.OnProgress,
 		planFile:       config.PlanFile,
 		dryRun:         config.DryRun,
 	}
@@ -114,6 +125,8 @@ func (e *Engine) Execute(ctx context.Context, plan *vpb.DeletionPlan) error {
 				return err
 			}
 		}
+
+		e.emitProgress()
 	}
 
 	if e.circuitBreaker.IsOpen() {
@@ -121,6 +134,20 @@ func (e *Engine) Execute(ctx context.Context, plan *vpb.DeletionPlan) error {
 	}
 
 	return nil
+}
+
+func (e *Engine) emitProgress() {
+	if e.onProgress == nil || e.progress == nil {
+		return
+	}
+	completed, failed, total, percentage := e.progress.GetProgress()
+	e.onProgress(ProgressSnapshot{
+		Completed:  completed,
+		Failed:     failed,
+		Total:      total,
+		Percentage: percentage,
+		ETA:        e.progress.GetETA(),
+	})
 }
 
 func (e *Engine) shouldDelete(action *vpb.SecretAction, cfg *vpb.PlanConfig) bool {

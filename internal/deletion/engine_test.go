@@ -103,6 +103,27 @@ func TestEngine_Execute_UnknownHandledByPlanConfig(t *testing.T) {
 	require.Equal(t, 1, exec.calls)
 }
 
+func TestEngine_Execute_EmitsProgress(t *testing.T) {
+	plan := testPlan(false)
+	exec := &countingExecutor{}
+	events := 0
+
+	eng := NewEngine(Config{
+		Executor:       exec,
+		RateLimiter:    ratelimit.New(1000),
+		CircuitBreaker: NewCircuitBreaker(2),
+		PlanFile:       filepath.Join(t.TempDir(), "plan.pb"),
+		OnProgress: func(snapshot ProgressSnapshot) {
+			events++
+			require.Equal(t, 1, snapshot.Total)
+		},
+	})
+
+	err := eng.Execute(context.Background(), plan)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, events, 1)
+}
+
 type countingExecutor struct {
 	calls int
 }

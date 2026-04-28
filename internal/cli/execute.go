@@ -39,7 +39,7 @@ var createExecuteVaultClient = func(cfg *config.Config) (executeVaultClient, err
 	})
 }
 
-var createExecuteEngine = func(client executeVaultClient, opts executeOptions, cfg *config.Config) deletionEngine {
+var createExecuteEngine = func(client executeVaultClient, opts executeOptions, cfg *config.Config, onProgress func(deletion.ProgressSnapshot)) deletionEngine {
 	rate := cfg.RateLimit.RequestsPerSecond
 	if opts.rateLimit > 0 {
 		rate = opts.rateLimit
@@ -56,6 +56,7 @@ var createExecuteEngine = func(client executeVaultClient, opts executeOptions, c
 		CircuitBreaker: deletion.NewCircuitBreaker(threshold),
 		DryRun:         opts.dryRun,
 		PlanFile:       opts.plan,
+		OnProgress:     onProgress,
 	})
 }
 
@@ -83,6 +84,12 @@ func runExecute(ctx context.Context, opts executeOptions, cfg *config.Config, in
 	if cfg == nil {
 		return fmt.Errorf("configuration is required")
 	}
+
+	reporter, err := newProgressReporter(out, "execute")
+	if err != nil {
+		return err
+	}
+	defer reporter.Close()
 
 	blob, err := os.ReadFile(opts.plan)
 	if err != nil {
@@ -113,7 +120,9 @@ func runExecute(ctx context.Context, opts executeOptions, cfg *config.Config, in
 	if err != nil {
 		return fmt.Errorf("failed to create vault client: %w", err)
 	}
-	engine := createExecuteEngine(client, opts, cfg)
+	engine := createExecuteEngine(client, opts, cfg, func(snapshot deletion.ProgressSnapshot) {
+		reporter.Emit("delete", snapshot.Completed, snapshot.Total, snapshot.Failed, snapshot.ETA)
+	})
 
 	if err := engine.Execute(ctx, plan); err != nil {
 		if logger := GetLogger(); logger != nil {
