@@ -47,14 +47,25 @@ func runAnalyze(ctx context.Context, opts analyzeOptions) error {
 		return fmt.Errorf("no audit log files found matching: %s", opts.auditLog)
 	}
 
+	reporter, err := newProgressReporter(os.Stdout, "analyze")
+	if err != nil {
+		return err
+	}
+	defer reporter.Close()
+
 	parser := NewAuditParser()
 	extractor := audit.NewExtractor()
 	aggregator := audit.NewAggregator()
+	events := 0
 
-	for _, file := range files {
-		if err := processAuditFile(ctx, file, parser, extractor, aggregator); err != nil {
+	for idx, file := range files {
+		if err := processAuditFile(ctx, file, parser, extractor, aggregator, func() {
+			events++
+			reporter.Emit("parse", events, 0, 0, 0)
+		}); err != nil {
 			return err
 		}
+		reporter.Emit("files", idx+1, len(files), 0, 0)
 	}
 
 	records := aggregator.GetRecords()
@@ -100,7 +111,7 @@ func (p *parserAdapter) Parse(ctx context.Context, reader auditReader, handler f
 	return p.parser.Parse(ctx, reader, handler)
 }
 
-func processAuditFile(ctx context.Context, path string, parser *parserAdapter, extractor *audit.Extractor, aggregator *audit.Aggregator) error {
+func processAuditFile(ctx context.Context, path string, parser *parserAdapter, extractor *audit.Extractor, aggregator *audit.Aggregator, onEvent func()) error {
 	reader, err := audit.OpenFile(path)
 	if err != nil {
 		return err
@@ -108,6 +119,9 @@ func processAuditFile(ctx context.Context, path string, parser *parserAdapter, e
 	defer reader.Close()
 
 	return parser.Parse(ctx, reader, func(event audit.AuditEvent) error {
+		if onEvent != nil {
+			onEvent()
+		}
 		aggregator.Add(extractor.Extract(event))
 		return nil
 	})
