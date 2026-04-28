@@ -8,14 +8,21 @@ import (
 
 type Config struct {
 	MatchingStrategy MatchingStrategy
+	OnProgress       func(ProgressSnapshot)
+}
+
+type ProgressSnapshot struct {
+	Completed int
+	Total     int
 }
 
 type Engine struct {
-	matcher *Matcher
+	matcher    *Matcher
+	onProgress func(ProgressSnapshot)
 }
 
 func NewEngine(config Config) *Engine {
-	return &Engine{matcher: NewMatcher(config.MatchingStrategy)}
+	return &Engine{matcher: NewMatcher(config.MatchingStrategy), onProgress: config.OnProgress}
 }
 
 func (e *Engine) Correlate(inventory *vpb.Inventory, accessData *vpb.AccessData) (map[string]*vpb.AccessRecord, error) {
@@ -23,6 +30,14 @@ func (e *Engine) Correlate(inventory *vpb.Inventory, accessData *vpb.AccessData)
 	if inventory == nil || accessData == nil {
 		return result, nil
 	}
+
+	total := 0
+	for _, namespace := range inventory.Namespaces {
+		for _, mount := range namespace.Mounts {
+			total += len(mount.Secrets)
+		}
+	}
+	completed := 0
 
 	for _, namespace := range inventory.Namespaces {
 		for _, mount := range namespace.Mounts {
@@ -33,11 +48,20 @@ func (e *Engine) Correlate(inventory *vpb.Inventory, accessData *vpb.AccessData)
 						break
 					}
 				}
+				completed++
+				e.emitProgress(completed, total)
 			}
 		}
 	}
 
 	return result, nil
+}
+
+func (e *Engine) emitProgress(completed, total int) {
+	if e.onProgress == nil {
+		return
+	}
+	e.onProgress(ProgressSnapshot{Completed: completed, Total: total})
 }
 
 func BuildKey(namespace *vpb.Namespace, mount *vpb.Mount, secret *vpb.Secret) string {

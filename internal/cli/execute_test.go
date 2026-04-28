@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gsantos-hc/vault-secrets-cleanup/internal/config"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/deletion"
 	vpb "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"github.com/stretchr/testify/require"
 	gproto "google.golang.org/protobuf/proto"
@@ -39,7 +40,7 @@ func TestRunExecute_CancelledByConfirmation(t *testing.T) {
 	createExecuteVaultClient = func(_ *config.Config) (executeVaultClient, error) {
 		return nil, nil
 	}
-	createExecuteEngine = func(_ executeVaultClient, _ executeOptions, _ *config.Config) deletionEngine {
+	createExecuteEngine = func(_ executeVaultClient, _ executeOptions, _ *config.Config, _ func(deletion.ProgressSnapshot)) deletionEngine {
 		t.Fatal("engine should not be created when confirmation is declined")
 		return nil
 	}
@@ -66,7 +67,7 @@ func TestRunExecute_DryRunSkipsConfirmationAndRunsEngine(t *testing.T) {
 	createExecuteVaultClient = func(_ *config.Config) (executeVaultClient, error) {
 		return nil, nil
 	}
-	createExecuteEngine = func(_ executeVaultClient, _ executeOptions, _ *config.Config) deletionEngine {
+	createExecuteEngine = func(_ executeVaultClient, _ executeOptions, _ *config.Config, _ func(deletion.ProgressSnapshot)) deletionEngine {
 		return fakeDeletionEngine{run: func(plan *vpb.DeletionPlan) error {
 			called = true
 			require.Len(t, plan.Actions, 1)

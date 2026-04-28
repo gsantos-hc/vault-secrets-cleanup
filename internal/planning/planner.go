@@ -11,12 +11,19 @@ type Config struct {
 	StalenessConfig StalenessConfig
 	ExclusionConfig ExclusionConfig
 	IncludeUnknown  bool
+	OnProgress      func(ProgressSnapshot)
+}
+
+type ProgressSnapshot struct {
+	Completed int
+	Total     int
 }
 
 type Planner struct {
 	stalenessCalc  *StalenessCalculator
 	exclusionRules *ExclusionEngine
 	includeUnknown bool
+	onProgress     func(ProgressSnapshot)
 }
 
 func NewPlanner(config Config) *Planner {
@@ -24,6 +31,7 @@ func NewPlanner(config Config) *Planner {
 		stalenessCalc:  NewStalenessCalculator(config.StalenessConfig),
 		exclusionRules: NewExclusionEngine(config.ExclusionConfig),
 		includeUnknown: config.IncludeUnknown,
+		onProgress:     config.OnProgress,
 	}
 }
 
@@ -38,6 +46,14 @@ func (p *Planner) GeneratePlan(inventory *vpb.Inventory, accessMap map[string]*v
 	if inventory == nil {
 		return plan, nil
 	}
+
+	total := 0
+	for _, namespace := range inventory.Namespaces {
+		for _, mount := range namespace.Mounts {
+			total += len(mount.Secrets)
+		}
+	}
+	completed := 0
 
 	for _, namespace := range inventory.Namespaces {
 		for _, mount := range namespace.Mounts {
@@ -56,6 +72,8 @@ func (p *Planner) GeneratePlan(inventory *vpb.Inventory, accessMap map[string]*v
 					action.Reason = reason
 					plan.Actions = append(plan.Actions, action)
 					p.updateStats(plan.Stats, action)
+					completed++
+					p.emitProgress(completed, total)
 					continue
 				}
 
@@ -70,11 +88,20 @@ func (p *Planner) GeneratePlan(inventory *vpb.Inventory, accessMap map[string]*v
 
 				plan.Actions = append(plan.Actions, action)
 				p.updateStats(plan.Stats, action)
+				completed++
+				p.emitProgress(completed, total)
 			}
 		}
 	}
 
 	return plan, nil
+}
+
+func (p *Planner) emitProgress(completed, total int) {
+	if p.onProgress == nil {
+		return
+	}
+	p.onProgress(ProgressSnapshot{Completed: completed, Total: total})
 }
 
 func (p *Planner) updateStats(stats *vpb.PlanStats, action *vpb.SecretAction) {
