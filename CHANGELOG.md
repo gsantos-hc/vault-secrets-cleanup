@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.0-alpha.1](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0-alpha.0...v0.1.0-alpha.1) (2026-04-28)
+
+
+### Features
+
+* **analyze:** add audit analysis progress reporting ([b1f270e](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/b1f270e77487687dabd18f431d800bd249462bc3))
+* **discover:** add discovery progress tracking and CLI reporting ([de92009](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/de920098965f2a2d753c4258fb33bb2d68db16dc))
+* **execute:** add deletion execution progress callbacks and reporting ([9027c42](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/9027c420fe2d89d6dc1f119d505c361cfa999091))
+* **import:** add import aggregation progress reporting ([de3745b](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/de3745bfebadec0b391dde5b219e89584b40e39d))
+* **plan:** add correlation and planning progress reporting ([71fe783](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/71fe783c70b3b27f9917d7b8b2fb79230fd96da7))
+* **progress:** add global progress mode and shared reporter infrastructure ([9a579b4](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/9a579b4ef57ed43627db348e3bf0c7154a322819))
+* **seed:** add seeding progress callbacks and script reporter ([3c47078](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/3c470782b8e058387f0b3d4a7a396c4d15679651))
+
 ## 0.1.0-alpha.0 (2026-04-27)
 
 
