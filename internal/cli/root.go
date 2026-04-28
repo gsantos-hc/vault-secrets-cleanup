@@ -12,6 +12,7 @@ var (
 	configPath   string
 	vaultAddr    string
 	vaultToken   string
+	progressFlag string
 	loadedCfg    *config.Config
 	loadedLog    *logging.Logger
 	buildVersion = "dev"
@@ -57,6 +58,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "Path to YAML configuration file")
 	rootCmd.PersistentFlags().StringVar(&vaultAddr, "vault-addr", "", "Vault address (overrides config/env)")
 	rootCmd.PersistentFlags().StringVar(&vaultToken, "vault-token", "", "Vault token (overrides config/env)")
+	rootCmd.PersistentFlags().StringVar(&progressFlag, "progress", "auto", "Progress output mode (auto|tty|log|off)")
 	rootCmd.AddCommand(newValidateCmd())
 	rootCmd.AddCommand(newDiscoverCmd())
 	rootCmd.AddCommand(newAnalyzeCmd())
@@ -88,4 +90,8 @@ func SetBuildVersion(version string) {
 	}
 	buildVersion = version
 	rootCmd.Version = version
+}
+
+func GetProgressMode() string {
+	return progressFlag
 }
