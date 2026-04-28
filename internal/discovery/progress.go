@@ -16,6 +16,14 @@ type ProgressTracker struct {
 	running    bool
 }
 
+type ProgressSnapshot struct {
+	Namespaces int
+	Mounts     int
+	Secrets    int
+	Errors     int
+	Elapsed    time.Duration
+}
+
 func NewProgressTracker() *ProgressTracker {
 	return &ProgressTracker{errors: []string{}}
 }
@@ -70,4 +78,22 @@ func (p *ProgressTracker) Summary() string {
 		p.secrets,
 		len(p.errors),
 	)
+}
+
+func (p *ProgressTracker) Snapshot() ProgressSnapshot {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	elapsed := time.Duration(0)
+	if !p.startTime.IsZero() {
+		elapsed = time.Since(p.startTime)
+	}
+
+	return ProgressSnapshot{
+		Namespaces: p.namespaces,
+		Mounts:     p.mounts,
+		Secrets:    p.secrets,
+		Errors:     len(p.errors),
+		Elapsed:    elapsed,
+	}
 }

@@ -50,12 +50,14 @@ type Engine struct {
 	rateLimiter *ratelimit.Limiter
 	workers     int
 	progress    *ProgressTracker
+	onProgress  func(ProgressSnapshot)
 }
 
 type Config struct {
 	Client      VaultClient
 	RateLimiter *ratelimit.Limiter
 	Workers     int
+	OnProgress  func(ProgressSnapshot)
 }
 
 func NewEngine(config Config) *Engine {
@@ -71,6 +73,7 @@ func NewEngine(config Config) *Engine {
 		rateLimiter: config.RateLimiter,
 		workers:     config.Workers,
 		progress:    NewProgressTracker(),
+		onProgress:  config.OnProgress,
 	}
 }
 
@@ -96,7 +99,15 @@ func (e *Engine) Discover(ctx context.Context) (*vpb.Inventory, error) {
 
 	inventory.Namespaces = namespaces
 	e.calculateStats(inventory)
+	e.emitProgress()
 	return inventory, nil
+}
+
+func (e *Engine) emitProgress() {
+	if e.onProgress == nil || e.progress == nil {
+		return
+	}
+	e.onProgress(e.progress.Snapshot())
 }
 
 func (e *Engine) calculateStats(inventory *vpb.Inventory) {

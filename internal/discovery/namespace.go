@@ -16,6 +16,7 @@ func (e *Engine) discoverNamespaces(ctx context.Context) ([]*vpb.Namespace, erro
 	}
 	root.Mounts = mounts
 	e.progress.AddNamespace()
+	e.emitProgress()
 
 	namespaces := []*vpb.Namespace{root}
 
@@ -31,6 +32,7 @@ func (e *Engine) discoverNamespaces(ctx context.Context) ([]*vpb.Namespace, erro
 		ns, err := e.discoverNamespace(ctx, path)
 		if err != nil {
 			e.progress.LogError(fmt.Sprintf("namespace %s: %v", path, err))
+			e.emitProgress()
 			continue
 		}
 		namespaces = append(namespaces, ns)
@@ -52,5 +54,6 @@ func (e *Engine) discoverNamespace(ctx context.Context, path string) (*vpb.Names
 	}
 	ns.Mounts = mounts
 	e.progress.AddNamespace()
+	e.emitProgress()
 	return ns, nil
 }

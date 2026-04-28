@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gsantos-hc/vault-secrets-cleanup/internal/config"
+	"github.com/gsantos-hc/vault-secrets-cleanup/internal/discovery"
 	vpb "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
 	"github.com/stretchr/testify/require"
 )
@@ -33,11 +34,11 @@ func TestRunDiscover_SuccessWritesFile(t *testing.T) {
 	}
 	t.Cleanup(func() { loadedCfg = oldCfg })
 
-	oldFactory := createDiscoverEngine
-	createDiscoverEngine = func(cfg *config.Config, workers int) (discoverEngine, error) {
+	oldFactory := createDiscoverEngineWithProgress
+	createDiscoverEngineWithProgress = func(cfg *config.Config, workers int, _ func(discovery.ProgressSnapshot)) (discoverEngine, error) {
 		return &fakeDiscoverEngine{inventory: &vpb.Inventory{VaultAddress: cfg.Vault.Address, Stats: &vpb.InventoryStats{NamespaceCount: 1}}}, nil
 	}
-	t.Cleanup(func() { createDiscoverEngine = oldFactory })
+	t.Cleanup(func() { createDiscoverEngineWithProgress = oldFactory })
 
 	output := filepath.Join(t.TempDir(), "inventory.pb")
 	err := runDiscover(context.Background(), discoverOptions{output: output, workers: 2})
@@ -57,11 +58,11 @@ func TestRunDiscover_FailsOnEngineError(t *testing.T) {
 	}
 	t.Cleanup(func() { loadedCfg = oldCfg })
 
-	oldFactory := createDiscoverEngine
-	createDiscoverEngine = func(cfg *config.Config, workers int) (discoverEngine, error) {
+	oldFactory := createDiscoverEngineWithProgress
+	createDiscoverEngineWithProgress = func(cfg *config.Config, workers int, _ func(discovery.ProgressSnapshot)) (discoverEngine, error) {
 		return &fakeDiscoverEngine{err: errors.New("boom")}, nil
 	}
-	t.Cleanup(func() { createDiscoverEngine = oldFactory })
+	t.Cleanup(func() { createDiscoverEngineWithProgress = oldFactory })
 
 	err := runDiscover(context.Background(), discoverOptions{output: filepath.Join(t.TempDir(), "inventory.pb"), workers: 1})
 	require.Error(t, err)
