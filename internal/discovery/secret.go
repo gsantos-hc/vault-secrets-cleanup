@@ -22,6 +22,7 @@ func (e *Engine) discoverSecrets(ctx context.Context, client VaultClient, ns *vp
 		return nil, err
 	}
 	e.progress.AddSecrets(len(secrets))
+	e.emitProgress()
 	return secrets, nil
 }
 
@@ -59,6 +60,7 @@ func (e *Engine) listSecretsRecursive(ctx context.Context, client VaultClient, b
 			err := e.listSecretsRecursive(ctx, client, basePath, relPath, secrets)
 			if err != nil {
 				e.progress.LogError(fmt.Sprintf("path %s: %v", relPath, err))
+				e.emitProgress()
 				continue
 			}
 			continue

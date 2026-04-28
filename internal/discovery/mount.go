@@ -46,11 +46,13 @@ func (e *Engine) discoverMountsWithClient(ctx context.Context, client VaultClien
 		secrets, err := e.discoverSecrets(ctx, client, ns, kvMount)
 		if err != nil {
 			e.progress.LogError(fmt.Sprintf("mount %s/%s: %v", ns.Path, path, err))
+			e.emitProgress()
 			continue
 		}
 		kvMount.Secrets = secrets
 		kvMounts = append(kvMounts, kvMount)
 		e.progress.AddMount()
+		e.emitProgress()
 	}
 
 	return kvMounts, nil

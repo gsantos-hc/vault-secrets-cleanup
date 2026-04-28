@@ -24,6 +24,10 @@ type discoverEngine interface {
 }
 
 var createDiscoverEngine = func(cfg *config.Config, workers int) (discoverEngine, error) {
+	return createDiscoverEngineWithProgress(cfg, workers, nil)
+}
+
+var createDiscoverEngineWithProgress = func(cfg *config.Config, workers int, onProgress func(discovery.ProgressSnapshot)) (discoverEngine, error) {
 	client, err := vaultpkg.NewClient(vaultpkg.Config{
 		Address: cfg.Vault.Address,
 		Token:   cfg.Vault.Token,
@@ -36,6 +40,7 @@ var createDiscoverEngine = func(cfg *config.Config, workers int) (discoverEngine
 		Client:      discovery.NewVaultClientAdapter(client),
 		RateLimiter: ratelimit.New(cfg.RateLimit.RequestsPerSecond),
 		Workers:     workers,
+		OnProgress:  onProgress,
 	})
 	return wrappedDiscoverEngine{engine: eng}, nil
 }
@@ -70,7 +75,15 @@ func runDiscover(ctx context.Context, opts discoverOptions) error {
 		return fmt.Errorf("configuration not loaded")
 	}
 
-	engine, err := createDiscoverEngine(cfg, opts.workers)
+	reporter, err := newProgressReporter(os.Stdout, "discover")
+	if err != nil {
+		return err
+	}
+	defer reporter.Close()
+
+	engine, err := createDiscoverEngineWithProgress(cfg, opts.workers, func(snapshot discovery.ProgressSnapshot) {
+		reporter.Emit("inventory", snapshot.Secrets, 0, snapshot.Errors, 0)
+	})
 	if err != nil {
 		return err
 	}
