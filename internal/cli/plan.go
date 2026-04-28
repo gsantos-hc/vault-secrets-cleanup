@@ -48,6 +48,12 @@ func runPlan(ctx context.Context, opts planOptions, cfg *config.Config) error {
 		return fmt.Errorf("configuration is required")
 	}
 
+	reporter, err := newProgressReporter(os.Stdout, "plan")
+	if err != nil {
+		return err
+	}
+	defer reporter.Close()
+
 	inventoryBytes, err := os.ReadFile(opts.inventory)
 	if err != nil {
 		return fmt.Errorf("failed to read inventory: %w", err)
@@ -70,7 +76,12 @@ func runPlan(ctx context.Context, opts planOptions, cfg *config.Config) error {
 	if strategy != correlation.MatchingStrategyAccessor && strategy != correlation.MatchingStrategyPathBased {
 		return fmt.Errorf("unknown matching strategy %q: must be one of accessor, path-based", opts.matchingStrategy)
 	}
-	engine := correlation.NewEngine(correlation.Config{MatchingStrategy: strategy})
+	engine := correlation.NewEngine(correlation.Config{
+		MatchingStrategy: strategy,
+		OnProgress: func(snapshot correlation.ProgressSnapshot) {
+			reporter.Emit("correlation", snapshot.Completed, snapshot.Total, 0, 0)
+		},
+	})
 	accessMap, err := engine.Correlate(inventory, accessData)
 	if err != nil {
 		return fmt.Errorf("correlation failed: %w", err)
@@ -92,6 +103,9 @@ func runPlan(ctx context.Context, opts planOptions, cfg *config.Config) error {
 			MountPatterns:     cfg.Exclusions.Mounts,
 		},
 		IncludeUnknown: opts.includeUnknown,
+		OnProgress: func(snapshot planning.ProgressSnapshot) {
+			reporter.Emit("planning", snapshot.Completed, snapshot.Total, 0, 0)
+		},
 	})
 
 	planConfig := &vpb.PlanConfig{
