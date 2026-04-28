@@ -43,15 +43,25 @@ func runImport(ctx context.Context, opts importOptions) error {
 		return fmt.Errorf("input path is required")
 	}
 
+	reporter, err := newProgressReporter(os.Stdout, "import")
+	if err != nil {
+		return err
+	}
+	defer reporter.Close()
+
 	data, err := os.ReadFile(opts.input)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %w", err)
 	}
+	reporter.Emit("read", 1, 1, 0, 0)
 
-	records, err := parseImportedRecords(data)
+	records, err := parseImportedRecords(data, func(completed, total int) {
+		reporter.Emit("aggregate", completed, total, 0, 0)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to parse JSON: %w", err)
 	}
+	reporter.Emit("parsed", len(records), len(records), 0, 0)
 
 	payload := &vpb.AccessData{
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
@@ -86,7 +96,7 @@ type importedRecord struct {
 	AccessCount   int32  `json:"access_count"`
 }
 
-func parseImportedRecords(data []byte) ([]*vpb.AccessRecord, error) {
+func parseImportedRecords(data []byte, onProgress func(completed, total int)) ([]*vpb.AccessRecord, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 {
 		return nil, fmt.Errorf("input is empty")
@@ -116,10 +126,10 @@ func parseImportedRecords(data []byte) ([]*vpb.AccessRecord, error) {
 		return nil, fmt.Errorf("no records found")
 	}
 
-	return aggregateImportedRecords(records)
+	return aggregateImportedRecords(records, onProgress)
 }
 
-func aggregateImportedRecords(imported []importedRecord) ([]*vpb.AccessRecord, error) {
+func aggregateImportedRecords(imported []importedRecord, onProgress func(completed, total int)) ([]*vpb.AccessRecord, error) {
 	aggregated := make(map[string]*vpb.AccessRecord, len(imported))
 	latestByKey := make(map[string]time.Time, len(imported))
 
@@ -134,6 +144,9 @@ func aggregateImportedRecords(imported []importedRecord) ([]*vpb.AccessRecord, e
 		if !ok {
 			aggregated[key] = normalized
 			latestByKey[key] = ts
+			if onProgress != nil {
+				onProgress(i+1, len(imported))
+			}
 			continue
 		}
 
@@ -145,6 +158,10 @@ func aggregateImportedRecords(imported []importedRecord) ([]*vpb.AccessRecord, e
 		}
 		if existing.MountAccessor == "" && normalized.MountAccessor != "" {
 			existing.MountAccessor = normalized.MountAccessor
+		}
+
+		if onProgress != nil {
+			onProgress(i+1, len(imported))
 		}
 	}
 
