@@ -32,3 +32,13 @@ func TestSetBuildVersionIgnoresEmptyValue(t *testing.T) {
 		t.Fatalf("rootCmd.Version = %q, want %q", got, "v9.9.9")
 	}
 }
+
+func TestRootCommand_HasProgressFlag(t *testing.T) {
+	flag := rootCmd.PersistentFlags().Lookup("progress")
+	if flag == nil {
+		t.Fatalf("expected progress flag to exist")
+	}
+	if got := flag.DefValue; got != "auto" {
+		t.Fatalf("progress default = %q, want %q", got, "auto")
+	}
+}
