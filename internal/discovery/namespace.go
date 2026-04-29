@@ -66,7 +66,7 @@ func (e *Engine) discoverNamespaces(ctx context.Context) ([]*vpb.Namespace, erro
 
 	orderedResults := make([]*namespaceResult, len(namespacePaths))
 	for result := range results {
-		copy := result
+		res := result
 		if result.err != nil {
 			e.progress.LogError(fmt.Sprintf("namespace %s: %v", namespacePaths[result.index], result.err))
 			e.emitProgress()
@@ -74,7 +74,7 @@ func (e *Engine) discoverNamespaces(ctx context.Context) ([]*vpb.Namespace, erro
 		}
 		e.progress.AddNamespace()
 		e.emitProgress()
-		orderedResults[result.index] = &copy
+		orderedResults[result.index] = &res
 	}
 
 	namespaces := make([]*vpb.Namespace, 0, len(namespacePaths))

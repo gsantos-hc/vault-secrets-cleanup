@@ -76,15 +76,11 @@ func (e *Engine) listSecretsRecursive(ctx context.Context, client VaultClient, b
 		}
 
 		relPath := normalizeSecretPath(path.Join(normalizedSubPath, normalizedKey))
-		if strings.HasSuffix(keyStr, "/") {
+		if isFolder {
 			err := e.listSecretsRecursive(ctx, client, basePath, relPath, secrets, seenSecrets, visitedSubpaths)
 			if err != nil {
 				e.progress.LogError(fmt.Sprintf("path %s: %v", relPath, err))
 				e.emitProgress()
-				continue
-			}
-			if !isFolder {
-				continue
 			}
 			continue
 		}
