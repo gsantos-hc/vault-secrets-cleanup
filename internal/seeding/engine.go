@@ -62,7 +62,6 @@ type mountWorkItem struct {
 	namespace string
 	path      string
 	kvVersion int
-	secrets   int
 }
 
 type secretWorkItem struct {
