@@ -46,46 +46,37 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Generate release notes
         run: |
           set -euo pipefail
           mkdir -p dist
 
-          # In tag-triggered runs, HEAD is already tagged. `-r 1` targets the
-          # next unreleased section and can be empty, so generate at least two
-          # sections and keep only the current tagged release section.
-          pnpm exec conventional-changelog -p angular -r 2 > dist/release-notes-full.md
+          VERSION='${{ steps.vars.outputs.version }}'
+          ESCAPED_VERSION="${VERSION//./\\.}"
 
-          awk '
-            BEGIN { capture = 0 }
-            /^## / {
-              if (capture) {
-                exit
-              }
+          # Extract only this release section from CHANGELOG.md and skip the
+          # version heading line because the GitHub release name already has it.
+          awk -v heading_regex="^##[[:space:]]+\\[?${ESCAPED_VERSION}\\]?([[:space:]]*\\(|[[:space:]]|$)" '
+            BEGIN {
+              capture = 0
+            }
+            $0 ~ heading_regex {
               capture = 1
+              next
+            }
+            capture && /^##[[:space:]]+/ {
+              exit
             }
             capture {
               print
             }
-          ' dist/release-notes-full.md > dist/release-notes.md
+          ' CHANGELOG.md > dist/release-notes.md
+
+          # Trim leading blank lines after removing the version heading.
+          sed -i '/./,$!d' dist/release-notes.md
 
           if ! grep -q '[^[:space:]]' dist/release-notes.md; then
-            echo "## $GITHUB_REF_NAME" > dist/release-notes.md
-            echo >> dist/release-notes.md
-            echo "No conventional commits found for this release." >> dist/release-notes.md
+            echo "No CHANGELOG notes found for version ${VERSION}." > dist/release-notes.md
           fi
 
       - name: Upload release notes artifact
