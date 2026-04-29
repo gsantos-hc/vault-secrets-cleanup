@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.0-alpha.2](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-04-29)
+
+
+### Features
+
+* **discover:** add parallel workers ([#11](https://github.com/gsantos-hc/vault-secrets-cleanup/issues/11)) ([7ba64ef](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/7ba64efd2674d56dacaca9cff436666649faa820))
+* **execute:** delete secrets in parallel ([a52c722](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/a52c722c1e20b12b2df302cf487b2a7f46881b4e))
+* **execute:** save deletion progress ([#9](https://github.com/gsantos-hc/vault-secrets-cleanup/issues/9)) ([700fe0f](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/700fe0fd97641ae06fe823b58587cd19f76789b5))
+* **seed:** add parallel execution ([#10](https://github.com/gsantos-hc/vault-secrets-cleanup/issues/10)) ([f8f0452](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/f8f0452877727c2d29bf0f4e8347e756bad7b5d7))
+
 ## [0.1.0-alpha.1](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0-alpha.0...v0.1.0-alpha.1) (2026-04-28)
 
 
