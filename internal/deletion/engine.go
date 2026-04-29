@@ -193,6 +193,10 @@ func (e *Engine) Execute(ctx context.Context, plan *vpb.DeletionPlan) error {
 		if !e.dryRun && e.planFile != "" {
 			if err := e.savePlan(plan); err != nil {
 				close(jobs)
+				for inFlight > 0 {
+					<-results
+					inFlight--
+				}
 				wg.Wait()
 				return err
 			}

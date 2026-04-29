@@ -140,18 +140,19 @@ func TestEngine_Execute_ProcessesInParallel(t *testing.T) {
 		},
 	}
 
+	exec := newRendezvousExecutor(2)
 	eng := NewEngine(Config{
-		Executor:       &sleepExecutor{delay: 120 * time.Millisecond},
+		Executor:       exec,
 		RateLimiter:    ratelimit.New(1000),
 		CircuitBreaker: NewCircuitBreaker(2),
 		PlanFile:       filepath.Join(t.TempDir(), "plan.pb"),
 		Workers:        2,
 	})
 
-	start := time.Now()
-	err := eng.Execute(context.Background(), plan)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := eng.Execute(ctx, plan)
 	require.NoError(t, err)
-	require.Less(t, time.Since(start), 200*time.Millisecond)
 }
 
 type countingExecutor struct {
@@ -163,18 +164,33 @@ func (c *countingExecutor) Delete(_ context.Context, _ *vpb.SecretAction) error 
 	return nil
 }
 
-type sleepExecutor struct {
-	delay time.Duration
-	mu    sync.Mutex
-	calls int
+// rendezvousExecutor blocks each Delete call until n concurrent calls have started,
+// confirming that the engine dispatches multiple deletions simultaneously.
+type rendezvousExecutor struct {
+	mu      sync.Mutex
+	once    sync.Once
+	n       int
+	count   int
+	arrived chan struct{}
 }
 
-func (s *sleepExecutor) Delete(_ context.Context, _ *vpb.SecretAction) error {
-	time.Sleep(s.delay)
-	s.mu.Lock()
-	s.calls++
-	s.mu.Unlock()
-	return nil
+func newRendezvousExecutor(n int) *rendezvousExecutor {
+	return &rendezvousExecutor{n: n, arrived: make(chan struct{})}
+}
+
+func (r *rendezvousExecutor) Delete(ctx context.Context, _ *vpb.SecretAction) error {
+	r.mu.Lock()
+	r.count++
+	if r.count >= r.n {
+		r.once.Do(func() { close(r.arrived) })
+	}
+	r.mu.Unlock()
+	select {
+	case <-r.arrived:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func testPlan(includeUnknown bool) *vpb.DeletionPlan {
