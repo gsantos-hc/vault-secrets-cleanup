@@ -2,16 +2,15 @@
 
 A Go-based CLI tool for Vault Enterprise that helps identify and remove stale static secrets from KV engines based on access patterns derived from audit logs.
 
-## ⚠️ CRITICAL WARNING
+## ⚠️ WARNING
 
 **This tool performs PERMANENT, IRREVERSIBLE deletions of secrets from Vault.**
 
 Before running any deletion operations:
 
-1. **TAKE A VAULT SNAPSHOT** - Use Vault's snapshot functionality to create a backup
-2. **TEST IN NON-PRODUCTION** - Validate the tool's behavior in a test environment first
-3. **REVIEW DELETION PLANS** - Always review generated plans before executing
-4. **USE DRY-RUN MODE** - Test your configuration with `--dry-run` before actual deletions
+1. Take a snapshot
+2. Test in a non-production environment
+3. Carefully review deletion plans
 
 **The tool does NOT create backups.** Recovery from accidental deletions is only possible if you have taken Vault snapshots beforehand.
 
@@ -24,19 +23,6 @@ This tool helps DevOps and Platform teams maintain Vault hygiene by:
 - Identifying stale secrets that haven't been accessed in a configurable period
 - Generating deletion plans for review and approval
 - Executing approved deletions with safety features
-
-**Target Scale**: Large deployments (1-10GB+ audit logs, tens of millions of entries)
-
-## Features
-
-- **Comprehensive Discovery**: Enumerate all namespaces, KV mounts, and secrets
-- **Audit Log Analysis**: Stream and parse large audit logs efficiently (10GB+ in <30 minutes)
-- **Flexible Staleness Criteria**: Configure different retention periods per namespace
-- **Safety Features**: Dry-run mode, confirmation prompts, circuit breakers, exclusion rules
-- **Performance**: Rate limiting, concurrent processing, streaming for large datasets
-- **Protocol Buffers**: Efficient binary format for large inventories (3-10x smaller than JSON)
-- **Resumable Operations**: Continue from checkpoints after interruptions
-- **Detailed Reporting**: Generate reports in multiple formats (JSON, Markdown, CSV)
 
 ## Quick Start
 
@@ -77,61 +63,6 @@ vault-secrets-cleanup execute \
   --rate-limit 5
 ```
 
-## Cluster Seeding Script
-
-Use the standalone seeding script to generate synthetic Vault Enterprise data with:
-
-- configurable namespace count,
-- randomized mount distribution per namespace,
-- randomized secret distribution per mount,
-- exact user-defined total secret count,
-- parallel workers within each seeding stage.
-
-The script runs in three ordered stages: it creates namespaces first, then enables mounts across all namespaces, then writes secrets across all mounts. The `--workers` flag controls how many operations can run in parallel within each stage.
-
-```bash
-go run ./scripts/seed \
-  --config example-config.yaml \
-  --namespaces 25 \
-  --total-secrets 50000 \
-  --workers 8 \
-  --kv2-probability 0.9 \
-  --namespace-prefix seed \
-  --mount-prefix seed \
-  --seed 42
-```
-
-Dry run example (no writes):
-
-```bash
-go run ./scripts/seed \
-  --config example-config.yaml \
-  --namespaces 10 \
-  --total-secrets 1000 \
-  --workers 4 \
-  --dry-run
-```
-
-Required Vault capabilities for seeding include namespace creation, mount creation, and secret writes:
-
-```hcl
-path "sys/namespaces/*" {
-  capabilities = ["create", "update"]
-}
-
-path "+/sys/mounts/*" {
-  capabilities = ["create", "update"]
-}
-
-path "+/*/data/*" {
-  capabilities = ["create", "update"]
-}
-
-path "+/*" {
-  capabilities = ["create", "update"]
-}
-```
-
 ## Documentation
 
 - **[REQUIREMENTS.md](REQUIREMENTS.md)** - Complete requirements specification
@@ -141,6 +72,7 @@ path "+/*" {
 - **[docs/usage.md](docs/usage.md)** - CLI command usage and examples
 - **[docs/workflows.md](docs/workflows.md)** - End-to-end operational workflows
 - **[docs/troubleshooting.md](docs/troubleshooting.md)** - Common issues and fixes
+- **[docs/seed.md](docs/seed.md)** - Seeding script to set up a test environment
 - **[docs/examples](docs/examples)** - Practical cleanup scenarios
 
 ## Requirements
@@ -148,24 +80,8 @@ path "+/*" {
 - Go 1.21+
 - Vault 1.11+ (Enterprise for namespace support)
 - Vault token with appropriate permissions (see [REQUIREMENTS.md](REQUIREMENTS.md))
-- 2GB RAM minimum (4GB recommended)
-- 10GB disk space for large operations
 
-## Installation
-
-```bash
-# Clone repository
-git clone https://github.com/gsantos-hc/vault-secrets-cleanup
-cd vault-secrets-cleanup
-
-# Build
-go build -o vault-secrets-cleanup ./cmd/vault-secrets-cleanup
-
-# Install
-go install ./cmd/vault-secrets-cleanup
-```
-
-## Configuration
+## Configuration (optional)
 
 Create `~/.vault-secrets-cleanup.yaml`:
 
@@ -193,16 +109,6 @@ exclusions:
     - "*/bootstrap/*"
     - "*/root-token"
 ```
-
-## Safety Features
-
-1. **Dry-run mode**: Generate plans without executing
-2. **Confirmation prompts**: Require explicit approval before deletion
-3. **Circuit breaker**: Stop after N consecutive failures
-4. **Exclusion rules**: Protect critical secrets
-5. **Unknown-access opt-in**: Require explicit flag to delete secrets with no audit trail
-6. **Resumable operations**: Continue after interruption
-7. **Hard delete**: Permanently remove secrets (KV v1 and v2)
 
 ## Vault Permissions Required
 
@@ -285,11 +191,3 @@ Version bump behavior follows conventional commits through the release tool:
 ## License
 
 [Your License Here]
-
-## Support
-
-For issues and questions, please open a GitHub issue.
-
----
-
-**Remember**: Always take Vault snapshots before running deletions. This tool performs permanent operations and does not create backups.
