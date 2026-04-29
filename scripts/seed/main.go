@@ -26,6 +26,7 @@ func main() {
 		totalSecrets    int
 		kv2Probability  float64
 		randomSeed      int64
+		workers         int
 		namespacePrefix string
 		mountPrefix     string
 		dryRun          bool
@@ -40,6 +41,7 @@ func main() {
 	flag.IntVar(&totalSecrets, "total-secrets", 1000, "Total number of secrets to create across the cluster")
 	flag.Float64Var(&kv2Probability, "kv2-probability", 0.9, "Probability that a generated mount uses KV v2")
 	flag.Int64Var(&randomSeed, "seed", 0, "Random seed (0 uses current time)")
+	flag.IntVar(&workers, "workers", 4, "Number of parallel workers to use within each seeding stage")
 	flag.StringVar(&namespacePrefix, "namespace-prefix", "seed", "Prefix for generated namespace names")
 	flag.StringVar(&mountPrefix, "mount-prefix", "seed", "Prefix for generated mount names")
 	flag.BoolVar(&dryRun, "dry-run", false, "Plan operations without writing to Vault")
@@ -84,6 +86,7 @@ func main() {
 		TotalSecrets:    totalSecrets,
 		KV2Probability:  kv2Probability,
 		RandomSeed:      randomSeed,
+		Workers:         workers,
 		NamespacePrefix: namespacePrefix,
 		MountPrefix:     mountPrefix,
 		DryRun:          dryRun,
