@@ -144,6 +144,8 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 	}
 
 	if err := runStage(ctx, workers, func(ctx context.Context, ch chan<- secretWorkItem) {
+		// rng is only accessed here, after Allocate has completed, so there is no
+		// concurrent access; no mutex is needed.
 		for _, ns := range plan {
 			nsName := withPrefix(e.cfg.NamespacePrefix, ns.Name)
 			for _, mount := range ns.Mounts {
@@ -229,6 +231,10 @@ func runStage[T any](ctx context.Context, workers int, send func(context.Context
 		go func() {
 			defer wg.Done()
 			for item := range jobs {
+				if stageCtx.Err() != nil {
+					results <- stageCtx.Err()
+					continue
+				}
 				results <- run(stageCtx, item)
 			}
 		}()
