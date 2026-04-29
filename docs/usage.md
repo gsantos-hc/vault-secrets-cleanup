@@ -57,7 +57,7 @@ vault-secrets-cleanup execute \
 
 - Configure default worker count in config: `parallel.workers: 10`
 - Override per run with CLI flag: `--workers <n>`
-- Not all workflows use parallel workers yet; currently `execute` is the active adopter.
+- Parallel worker controls are used by `discover` and `execute`.
 
 ## Safety Checklist
 
