@@ -168,7 +168,7 @@ func TestEngine_Execute_PersistsCanceledInFlightAsFailed(t *testing.T) {
 	}
 
 	secondStarted := make(chan struct{}, 1)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	t.Cleanup(cancel)
 
 	eng := NewEngine(Config{
@@ -180,8 +180,11 @@ func TestEngine_Execute_PersistsCanceledInFlightAsFailed(t *testing.T) {
 	})
 
 	go func() {
-		<-secondStarted
-		cancel()
+		select {
+		case <-secondStarted:
+			cancel()
+		case <-ctx.Done():
+		}
 	}()
 
 	err := eng.Execute(ctx, plan)
