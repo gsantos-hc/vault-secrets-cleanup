@@ -18,6 +18,9 @@ rate_limit:
   requests_per_second: 100
   burst: 100
 
+parallel:
+  workers: 10
+
 staleness:
   default_period: 365d
   namespaces:
@@ -41,9 +44,13 @@ logging:
 
 - `VAULT_ADDR`: Vault API address
 - `VAULT_TOKEN`: Vault token used by CLI commands
+- `PARALLEL_WORKERS`: Default number of parallel workers
+- `DELETION_WORKERS`: Legacy alias for backward compatibility
 
 ## Important Notes
 
 - `vault.address` and `vault.token` are required.
+- `parallel.workers` must be greater than 0. Default is `10`.
+- Parallel workers are a generic concept; currently only the `execute` workflow uses them.
 - `staleness.default_period` must be a positive duration like `365d`, `720h`, or `30m`.
 - Use exclusion rules for critical namespaces and bootstrap paths.

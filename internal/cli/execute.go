@@ -21,6 +21,7 @@ import (
 type executeOptions struct {
 	plan           string
 	rateLimit      float64
+	workers        int
 	circuitBreaker int
 	dryRun         bool
 	confirmAll     bool
@@ -44,6 +45,7 @@ var createExecuteEngine = func(client executeVaultClient, opts executeOptions, c
 	if opts.rateLimit > 0 {
 		rate = opts.rateLimit
 	}
+	workers := resolveParallelWorkers(opts, cfg)
 	threshold := opts.circuitBreaker
 	if threshold <= 0 {
 		threshold = 10
@@ -54,10 +56,21 @@ var createExecuteEngine = func(client executeVaultClient, opts executeOptions, c
 		RateLimiter:    ratelimit.New(rate),
 		RetryConfig:    retry.DefaultConfig(),
 		CircuitBreaker: deletion.NewCircuitBreaker(threshold),
+		Workers:        workers,
 		DryRun:         opts.dryRun,
 		PlanFile:       opts.plan,
 		OnProgress:     onProgress,
 	})
+}
+
+func resolveParallelWorkers(opts executeOptions, cfg *config.Config) int {
+	if opts.workers > 0 {
+		return opts.workers
+	}
+	if cfg != nil && cfg.Parallel.Workers > 0 {
+		return cfg.Parallel.Workers
+	}
+	return 10
 }
 
 func newExecuteCmd() *cobra.Command {
@@ -73,6 +86,7 @@ func newExecuteCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.plan, "plan", "deletion-plan.pb", "Deletion plan protobuf file")
 	cmd.Flags().Float64Var(&opts.rateLimit, "rate-limit", 0, "Override deletion requests per second")
+	cmd.Flags().IntVar(&opts.workers, "workers", 0, "Override number of concurrent deletion workers")
 	cmd.Flags().IntVar(&opts.circuitBreaker, "circuit-breaker", 10, "Max consecutive failures before stopping")
 	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Simulate deletion without changing Vault")
 	cmd.Flags().BoolVarP(&opts.confirmAll, "yes", "y", false, "Skip interactive confirmation")

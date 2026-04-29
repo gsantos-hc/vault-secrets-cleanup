@@ -6,6 +6,9 @@ rate_limit:
   requests_per_second: 100
   burst: 100
 
+parallel:
+  workers: 10
+
 staleness:
   default_period: 365d
   namespaces:
