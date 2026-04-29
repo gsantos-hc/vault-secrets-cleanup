@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gsantos-hc/vault-secrets-cleanup/internal/config"
@@ -69,7 +70,11 @@ func init() {
 }
 
 func Execute() error {
-	if err := rootCmd.Execute(); err != nil {
+	return ExecuteContext(context.Background())
+}
+
+func ExecuteContext(ctx context.Context) error {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		return fmt.Errorf("execute root command: %w", err)
 	}
 
