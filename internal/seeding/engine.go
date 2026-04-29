@@ -106,34 +106,22 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 	}
 
 	workers := defaultWorkers(e.cfg.Workers)
-	mounts := make([]mountWorkItem, 0, res.PlannedMounts)
-	secrets := make([]secretWorkItem, 0, res.PlannedSecrets)
+
 	namespaces := make([]string, 0, len(plan))
+	mounts := make([]mountWorkItem, 0, res.PlannedMounts)
 	for _, ns := range plan {
 		nsName := withPrefix(e.cfg.NamespacePrefix, ns.Name)
 		namespaces = append(namespaces, nsName)
-
 		for _, mount := range ns.Mounts {
-			mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
 			mounts = append(mounts, mountWorkItem{
 				namespace: nsName,
-				path:      mountName,
+				path:      withPrefix(e.cfg.MountPrefix, mount.Name),
 				kvVersion: mount.KVVersion,
-				secrets:   mount.SecretCount,
 			})
-			for i := 0; i < mount.SecretCount; i++ {
-				secrets = append(secrets, secretWorkItem{
-					namespace:  nsName,
-					mountPath:  mountName,
-					secretPath: fmt.Sprintf("secret-%06d", i+1),
-					data:       map[string]any{"value": rng.Int63()},
-					kvVersion:  mount.KVVersion,
-				})
-			}
 		}
 	}
 
-	if err := runStage(ctx, namespaces, workers, func(ctx context.Context, namespace string) error {
+	if err := runStage(ctx, workers, sliceSend(namespaces), func(ctx context.Context, namespace string) error {
 		return e.executeWrite(ctx, func() error {
 			return e.cfg.Writer.CreateNamespace(ctx, namespace)
 		})
@@ -144,7 +132,7 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 		return res, err
 	}
 
-	if err := runStage(ctx, mounts, workers, func(ctx context.Context, mount mountWorkItem) error {
+	if err := runStage(ctx, workers, sliceSend(mounts), func(ctx context.Context, mount mountWorkItem) error {
 		return e.executeWrite(ctx, func() error {
 			return e.cfg.Writer.EnableKVMount(ctx, mount.namespace, mount.path, mount.kvVersion)
 		})
@@ -155,7 +143,28 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 		return res, err
 	}
 
-	if err := runStage(ctx, secrets, workers, func(ctx context.Context, secret secretWorkItem) error {
+	if err := runStage(ctx, workers, func(ctx context.Context, ch chan<- secretWorkItem) {
+		for _, ns := range plan {
+			nsName := withPrefix(e.cfg.NamespacePrefix, ns.Name)
+			for _, mount := range ns.Mounts {
+				mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
+				for i := 0; i < mount.SecretCount; i++ {
+					item := secretWorkItem{
+						namespace:  nsName,
+						mountPath:  mountName,
+						secretPath: fmt.Sprintf("secret-%06d", i+1),
+						data:       map[string]any{"value": rng.Int63()},
+						kvVersion:  mount.KVVersion,
+					}
+					select {
+					case ch <- item:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+		}
+	}, func(ctx context.Context, secret secretWorkItem) error {
 		return e.executeWrite(ctx, func() error {
 			return e.cfg.Writer.WriteKVSecret(ctx, secret.namespace, secret.mountPath, secret.secretPath, secret.data, secret.kvVersion)
 		})
@@ -177,73 +186,76 @@ func (e *Engine) executeWrite(ctx context.Context, op func() error) error {
 	return retry.DoWithRetryable(ctx, e.cfg.Retry, op, retry.IsRetryable)
 }
 
-func runStage[T any](ctx context.Context, items []T, workers int, run func(context.Context, T) error, onSuccess func()) error {
-	if len(items) == 0 {
-		return nil
+// sliceSend returns a send function that feeds every element of items into ch,
+// stopping early when ctx is cancelled.
+func sliceSend[T any](items []T) func(context.Context, chan<- T) {
+	return func(ctx context.Context, ch chan<- T) {
+		for _, item := range items {
+			select {
+			case ch <- item:
+			case <-ctx.Done():
+				return
+			}
+		}
 	}
+}
 
-	workers = min(workers, len(items))
-	jobs := make(chan T)
-	results := make(chan error)
+// runStage runs all items produced by send through run in parallel using workers
+// goroutines. send is called in its own goroutine and should write items to the
+// supplied channel, respecting ctx for early cancellation. onSuccess is called
+// (from the collector goroutine) for each item that completes without error.
+// The first error encountered cancels the stage context and is returned once all
+// in-flight work has drained.
+func runStage[T any](ctx context.Context, workers int, send func(context.Context, chan<- T), run func(context.Context, T) error, onSuccess func()) error {
 	stageCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// Buffered channels decouple the producer from workers and workers from the
+	// collector, eliminating the head-of-line blocking that could cause deadlocks
+	// with unbuffered channels.
+	jobs := make(chan T, workers)
+	results := make(chan error, workers)
+
+	// Producer goroutine – closes jobs when it is done or the context is cancelled.
+	go func() {
+		defer close(jobs)
+		send(stageCtx, jobs)
+	}()
+
+	// Worker goroutines – drain jobs and forward results.
 	var wg sync.WaitGroup
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for item := range jobs {
-				if err := stageCtx.Err(); err != nil {
-					results <- err
-					continue
-				}
 				results <- run(stageCtx, item)
 			}
 		}()
 	}
 
-	next := 0
-	inFlight := 0
-	stopDispatch := false
+	// Close results once every worker has finished so the collector loop below
+	// terminates naturally.
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collector – process results in the calling goroutine so that onSuccess is
+	// never called concurrently.
 	var firstErr error
-
-	for next < len(items) || inFlight > 0 {
-		for !stopDispatch && inFlight < workers && next < len(items) {
-			if err := stageCtx.Err(); err != nil {
-				firstErr = err
-				stopDispatch = true
-				break
-			}
-			jobs <- items[next]
-			next++
-			inFlight++
-		}
-
-		if inFlight == 0 {
-			break
-		}
-
-		err := <-results
-		inFlight--
+	for err := range results {
 		if err != nil {
 			if firstErr == nil {
 				firstErr = err
-				stopDispatch = true
-				cancel()
+				cancel() // signal producer and workers to stop early
 			}
 			continue
 		}
 		onSuccess()
 	}
 
-	close(jobs)
-	wg.Wait()
-
-	if firstErr != nil {
-		return firstErr
-	}
-	return nil
+	return firstErr
 }
 
 func (e *Engine) emitProgress(phase string, res Result) {
@@ -281,11 +293,4 @@ func defaultWorkers(workers int) int {
 		return 1
 	}
 	return workers
-}
-
-func min(left, right int) int {
-	if left < right {
-		return left
-	}
-	return right
 }
