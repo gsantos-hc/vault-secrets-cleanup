@@ -45,7 +45,6 @@ logging:
 - `VAULT_ADDR`: Vault API address
 - `VAULT_TOKEN`: Vault token used by CLI commands
 - `PARALLEL_WORKERS`: Default number of parallel workers
-- `DELETION_WORKERS`: Legacy alias for backward compatibility
 
 ## Important Notes
 
