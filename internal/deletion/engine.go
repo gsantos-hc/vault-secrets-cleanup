@@ -163,14 +163,17 @@ func (e *Engine) Execute(ctx context.Context, plan *vpb.DeletionPlan) error {
 					ctxErr = result.err
 				}
 				stopDispatch = true
-				continue
+				e.progress.RecordFailure()
+				result.action.Status = "failed"
+				result.action.Error = result.err.Error()
+				result.action.DeletedAt = ""
+			} else {
+				e.circuitBreaker.RecordFailure(result.err)
+				e.progress.RecordFailure()
+				result.action.Status = "failed"
+				result.action.Error = result.err.Error()
+				result.action.DeletedAt = ""
 			}
-
-			e.circuitBreaker.RecordFailure(result.err)
-			e.progress.RecordFailure()
-			result.action.Status = "failed"
-			result.action.Error = result.err.Error()
-			result.action.DeletedAt = ""
 		} else {
 			if circuitErr == nil {
 				e.circuitBreaker.RecordSuccess()

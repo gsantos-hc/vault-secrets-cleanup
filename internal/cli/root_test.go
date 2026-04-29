@@ -1,6 +1,10 @@
 package cli
 
-import "testing"
+import (
+	"context"
+	"io"
+	"testing"
+)
 
 func TestSetBuildVersionUpdatesRootCommandVersion(t *testing.T) {
 	oldBuildVersion := buildVersion
@@ -40,5 +44,23 @@ func TestRootCommand_HasProgressFlag(t *testing.T) {
 	}
 	if got := flag.DefValue; got != "auto" {
 		t.Fatalf("progress default = %q, want %q", got, "auto")
+	}
+}
+
+func TestExecuteContext_Help(t *testing.T) {
+	oldOut := rootCmd.OutOrStdout()
+	oldErr := rootCmd.ErrOrStderr()
+	rootCmd.SetOut(io.Discard)
+	rootCmd.SetErr(io.Discard)
+	t.Cleanup(func() {
+		rootCmd.SetOut(oldOut)
+		rootCmd.SetErr(oldErr)
+		rootCmd.SetArgs(nil)
+	})
+
+	rootCmd.SetArgs([]string{"--help"})
+	err := ExecuteContext(context.Background())
+	if err != nil {
+		t.Fatalf("ExecuteContext returned error: %v", err)
 	}
 }

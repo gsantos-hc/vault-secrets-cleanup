@@ -155,6 +155,57 @@ func TestEngine_Execute_ProcessesInParallel(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestEngine_Execute_PersistsCanceledInFlightAsFailed(t *testing.T) {
+	dir := t.TempDir()
+	planPath := filepath.Join(dir, "plan.pb")
+	plan := &vpb.DeletionPlan{
+		Config: &vpb.PlanConfig{IncludeUnknown: false},
+		Actions: []*vpb.SecretAction{
+			{Category: "stale", Status: "pending", SecretPath: "s1"},
+			{Category: "stale", Status: "pending", SecretPath: "s2"},
+			{Category: "stale", Status: "pending", SecretPath: "s3"},
+		},
+	}
+
+	secondStarted := make(chan struct{}, 1)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	t.Cleanup(cancel)
+
+	eng := NewEngine(Config{
+		Executor:       &interruptingExecutor{secondStarted: secondStarted},
+		RateLimiter:    ratelimit.New(1000),
+		CircuitBreaker: NewCircuitBreaker(3),
+		Workers:        1,
+		PlanFile:       planPath,
+	})
+
+	go func() {
+		select {
+		case <-secondStarted:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	err := eng.Execute(ctx, plan)
+	require.ErrorIs(t, err, context.Canceled)
+
+	require.Equal(t, "deleted", plan.Actions[0].Status)
+	require.Equal(t, "failed", plan.Actions[1].Status)
+	require.Equal(t, context.Canceled.Error(), plan.Actions[1].Error)
+	require.Equal(t, "pending", plan.Actions[2].Status)
+
+	data, readErr := os.ReadFile(planPath)
+	require.NoError(t, readErr)
+
+	var reloaded vpb.DeletionPlan
+	require.NoError(t, gproto.Unmarshal(data, &reloaded))
+	require.Equal(t, "deleted", reloaded.Actions[0].Status)
+	require.Equal(t, "failed", reloaded.Actions[1].Status)
+	require.Equal(t, context.Canceled.Error(), reloaded.Actions[1].Error)
+	require.Equal(t, "pending", reloaded.Actions[2].Status)
+}
+
 type countingExecutor struct {
 	calls int
 }
@@ -191,6 +242,33 @@ func (r *rendezvousExecutor) Delete(ctx context.Context, _ *vpb.SecretAction) er
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+type interruptingExecutor struct {
+	mu            sync.Mutex
+	calls         int
+	secondStarted chan struct{}
+}
+
+func (i *interruptingExecutor) Delete(ctx context.Context, _ *vpb.SecretAction) error {
+	i.mu.Lock()
+	i.calls++
+	call := i.calls
+	i.mu.Unlock()
+
+	if call == 1 {
+		return nil
+	}
+	if call == 2 {
+		select {
+		case i.secondStarted <- struct{}{}:
+		default:
+		}
+		<-ctx.Done()
+		return ctx.Err()
+	}
+
+	return nil
 }
 
 func testPlan(includeUnknown bool) *vpb.DeletionPlan {
