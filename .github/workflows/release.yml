@@ -48,7 +48,24 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          pnpm exec conventional-changelog -p angular -r 1 -o dist/release-notes.md
+
+          # In tag-triggered runs, HEAD is already tagged. `-r 1` targets the
+          # next unreleased section and can be empty, so generate at least two
+          # sections and keep only the current tagged release section.
+          pnpm exec conventional-changelog -p angular -r 2 > dist/release-notes-full.md
+
+          awk '
+            BEGIN { capture = 0 }
+            /^## / {
+              if (capture) {
+                exit
+              }
+              capture = 1
+            }
+            capture {
+              print
+            }
+          ' dist/release-notes-full.md > dist/release-notes.md
 
           if ! grep -q '[^[:space:]]' dist/release-notes.md; then
             echo "## Release $GITHUB_REF_NAME" > dist/release-notes.md
