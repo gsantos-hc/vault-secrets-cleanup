@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"io"
 	"testing"
 )
 
@@ -47,11 +48,17 @@ func TestRootCommand_HasProgressFlag(t *testing.T) {
 }
 
 func TestExecuteContext_Help(t *testing.T) {
-	rootCmd.SetArgs([]string{"--help"})
+	oldOut := rootCmd.OutOrStdout()
+	oldErr := rootCmd.ErrOrStderr()
+	rootCmd.SetOut(io.Discard)
+	rootCmd.SetErr(io.Discard)
 	t.Cleanup(func() {
+		rootCmd.SetOut(oldOut)
+		rootCmd.SetErr(oldErr)
 		rootCmd.SetArgs(nil)
 	})
 
+	rootCmd.SetArgs([]string{"--help"})
 	err := ExecuteContext(context.Background())
 	if err != nil {
 		t.Fatalf("ExecuteContext returned error: %v", err)
