@@ -81,6 +81,25 @@ func TestRunExecute_DryRunSkipsConfirmationAndRunsEngine(t *testing.T) {
 	require.True(t, called)
 }
 
+func TestResolveParallelWorkers_DefaultFromConfig(t *testing.T) {
+	workers := resolveParallelWorkers(executeOptions{}, &config.Config{
+		Parallel: config.ParallelConfig{Workers: 12},
+	})
+	require.Equal(t, 12, workers)
+}
+
+func TestResolveParallelWorkers_FlagOverridesConfig(t *testing.T) {
+	workers := resolveParallelWorkers(executeOptions{workers: 4}, &config.Config{
+		Parallel: config.ParallelConfig{Workers: 12},
+	})
+	require.Equal(t, 4, workers)
+}
+
+func TestResolveParallelWorkers_DefaultWhenUnset(t *testing.T) {
+	workers := resolveParallelWorkers(executeOptions{}, &config.Config{})
+	require.Equal(t, 10, workers)
+}
+
 func writeTestPlan(path string) error {
 	plan := &vpb.DeletionPlan{
 		Stats: &vpb.PlanStats{TotalSecrets: 1, ToDeleteCount: 1, StaleCount: 1},

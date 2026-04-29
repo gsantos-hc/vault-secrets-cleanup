@@ -115,3 +115,51 @@ func TestValidate_InvalidStalenessPeriod(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorContains(t, err, "staleness.default_period")
 }
+
+func TestLoad_DefaultParallelWorkers(t *testing.T) {
+	t.Setenv("VAULT_ADDR", "https://vault.env.example.com")
+	t.Setenv("VAULT_TOKEN", "env-token")
+
+	cfg, err := Load("", nil)
+	require.NoError(t, err)
+	require.Equal(t, 10, cfg.Parallel.Workers)
+}
+
+func TestLoad_ParallelWorkersFromFile(t *testing.T) {
+	t.Setenv("VAULT_ADDR", "https://vault.env.example.com")
+	t.Setenv("VAULT_TOKEN", "env-token")
+
+	cfgPath := writeTempConfig(t, `parallel:
+  workers: 7
+`)
+
+	cfg, err := Load(cfgPath, nil)
+	require.NoError(t, err)
+	require.Equal(t, 7, cfg.Parallel.Workers)
+}
+
+func TestValidate_InvalidParallelWorkers(t *testing.T) {
+	cfg := Config{
+		Vault:     VaultConfig{Address: "https://vault.example.com", Token: "token"},
+		RateLimit: RateLimitConfig{RequestsPerSecond: 100},
+		Staleness: StalenessConfig{DefaultPeriod: "365d"},
+		Parallel:  ParallelConfig{Workers: 0},
+	}
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	require.ErrorContains(t, err, "parallel.workers")
+}
+
+func TestLoad_ParallelWorkersFlagsOverrideFile(t *testing.T) {
+	t.Setenv("VAULT_ADDR", "https://vault.env.example.com")
+	t.Setenv("VAULT_TOKEN", "env-token")
+
+	cfgPath := writeTempConfig(t, `parallel:
+  workers: 7
+`)
+
+	cfg, err := Load(cfgPath, map[string]any{"parallel.workers": 3})
+	require.NoError(t, err)
+	require.Equal(t, 3, cfg.Parallel.Workers)
+}

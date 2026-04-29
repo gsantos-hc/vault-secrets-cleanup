@@ -48,9 +48,16 @@ vault-secrets-cleanup execute \
 ```bash
 vault-secrets-cleanup execute \
   --plan deletion-plan.pb \
+  --workers 10 \
   --rate-limit 5 \
   --circuit-breaker 10
 ```
+
+### Execute Worker Controls
+
+- Configure default worker count in config: `parallel.workers: 10`
+- Override per run with CLI flag: `--workers <n>`
+- Not all workflows use parallel workers yet; currently `execute` is the active adopter.
 
 ## Safety Checklist
 

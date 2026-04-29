@@ -5,7 +5,9 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/gsantos-hc/vault-secrets-cleanup/internal/ratelimit"
 	"github.com/gsantos-hc/vault-secrets-cleanup/internal/retry"
@@ -35,6 +37,7 @@ func TestEngine_Execute_UpdatesStatusesAndWritesPlan(t *testing.T) {
 		RateLimiter:    ratelimit.New(1000),
 		RetryConfig:    retry.DefaultConfig(),
 		CircuitBreaker: NewCircuitBreaker(2),
+		Workers:        1,
 		PlanFile:       planPath,
 	})
 
@@ -60,6 +63,7 @@ func TestEngine_Execute_ResumesBySkippingDeleted(t *testing.T) {
 		Executor:       exec,
 		RateLimiter:    ratelimit.New(1000),
 		CircuitBreaker: NewCircuitBreaker(2),
+		Workers:        1,
 		PlanFile:       filepath.Join(t.TempDir(), "plan.pb"),
 	})
 
@@ -78,6 +82,7 @@ func TestEngine_Execute_StopsWhenCircuitBreakerOpens(t *testing.T) {
 		Executor:       exec,
 		RateLimiter:    ratelimit.New(1000),
 		CircuitBreaker: NewCircuitBreaker(2),
+		Workers:        1,
 		PlanFile:       filepath.Join(t.TempDir(), "plan.pb"),
 	})
 
@@ -95,6 +100,7 @@ func TestEngine_Execute_UnknownHandledByPlanConfig(t *testing.T) {
 		Executor:       exec,
 		RateLimiter:    ratelimit.New(1000),
 		CircuitBreaker: NewCircuitBreaker(2),
+		Workers:        1,
 		PlanFile:       filepath.Join(t.TempDir(), "plan.pb"),
 	})
 
@@ -112,6 +118,7 @@ func TestEngine_Execute_EmitsProgress(t *testing.T) {
 		Executor:       exec,
 		RateLimiter:    ratelimit.New(1000),
 		CircuitBreaker: NewCircuitBreaker(2),
+		Workers:        1,
 		PlanFile:       filepath.Join(t.TempDir(), "plan.pb"),
 		OnProgress: func(snapshot ProgressSnapshot) {
 			events++
@@ -124,6 +131,30 @@ func TestEngine_Execute_EmitsProgress(t *testing.T) {
 	require.GreaterOrEqual(t, events, 1)
 }
 
+func TestEngine_Execute_ProcessesInParallel(t *testing.T) {
+	plan := &vpb.DeletionPlan{
+		Config: &vpb.PlanConfig{IncludeUnknown: false},
+		Actions: []*vpb.SecretAction{
+			{Category: "stale", Status: "pending", SecretPath: "s1"},
+			{Category: "stale", Status: "pending", SecretPath: "s2"},
+		},
+	}
+
+	exec := newRendezvousExecutor(2)
+	eng := NewEngine(Config{
+		Executor:       exec,
+		RateLimiter:    ratelimit.New(1000),
+		CircuitBreaker: NewCircuitBreaker(2),
+		PlanFile:       filepath.Join(t.TempDir(), "plan.pb"),
+		Workers:        2,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := eng.Execute(ctx, plan)
+	require.NoError(t, err)
+}
+
 type countingExecutor struct {
 	calls int
 }
@@ -131,6 +162,35 @@ type countingExecutor struct {
 func (c *countingExecutor) Delete(_ context.Context, _ *vpb.SecretAction) error {
 	c.calls++
 	return nil
+}
+
+// rendezvousExecutor blocks each Delete call until n concurrent calls have started,
+// confirming that the engine dispatches multiple deletions simultaneously.
+type rendezvousExecutor struct {
+	mu      sync.Mutex
+	once    sync.Once
+	n       int
+	count   int
+	arrived chan struct{}
+}
+
+func newRendezvousExecutor(n int) *rendezvousExecutor {
+	return &rendezvousExecutor{n: n, arrived: make(chan struct{})}
+}
+
+func (r *rendezvousExecutor) Delete(ctx context.Context, _ *vpb.SecretAction) error {
+	r.mu.Lock()
+	r.count++
+	if r.count >= r.n {
+		r.once.Do(func() { close(r.arrived) })
+	}
+	r.mu.Unlock()
+	select {
+	case <-r.arrived:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func testPlan(includeUnknown bool) *vpb.DeletionPlan {

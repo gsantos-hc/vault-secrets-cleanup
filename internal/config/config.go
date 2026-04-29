@@ -14,6 +14,7 @@ type Config struct {
 	Vault      VaultConfig      `mapstructure:"vault"`
 	RateLimit  RateLimitConfig  `mapstructure:"rate_limit"`
 	Staleness  StalenessConfig  `mapstructure:"staleness"`
+	Parallel   ParallelConfig   `mapstructure:"parallel"`
 	Exclusions ExclusionsConfig `mapstructure:"exclusions"`
 	Logging    LoggingConfig    `mapstructure:"logging"`
 }
@@ -39,6 +40,10 @@ type ExclusionsConfig struct {
 	Mounts     []string `mapstructure:"mounts"`
 }
 
+type ParallelConfig struct {
+	Workers int `mapstructure:"workers"`
+}
+
 type LoggingConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
@@ -51,6 +56,7 @@ func Load(configPath string, flagValues map[string]any) (*Config, error) {
 	v.SetDefault("rate_limit.requests_per_second", 100.0)
 	v.SetDefault("rate_limit.burst", 100)
 	v.SetDefault("staleness.default_period", "365d")
+	v.SetDefault("parallel.workers", 10)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.format", "text")
 
@@ -63,6 +69,7 @@ func Load(configPath string, flagValues map[string]any) (*Config, error) {
 
 	_ = v.BindEnv("vault.address", "VAULT_ADDR")
 	_ = v.BindEnv("vault.token", "VAULT_TOKEN")
+	_ = v.BindEnv("parallel.workers", "PARALLEL_WORKERS")
 	v.AutomaticEnv()
 
 	for k, val := range flagValues {
@@ -98,6 +105,9 @@ func (c Config) Validate() error {
 	}
 	if c.RateLimit.RequestsPerSecond <= 0 {
 		errs = append(errs, errors.New("rate_limit.requests_per_second must be > 0"))
+	}
+	if c.Parallel.Workers <= 0 {
+		errs = append(errs, errors.New("parallel.workers must be > 0"))
 	}
 	if _, err := parsePeriod(c.Staleness.DefaultPeriod); err != nil {
 		errs = append(errs, fmt.Errorf("staleness.default_period must be valid duration: %w", err))
