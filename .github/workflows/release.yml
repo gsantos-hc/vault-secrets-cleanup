@@ -56,7 +56,7 @@ jobs:
 
           # Extract only this release section from CHANGELOG.md and skip the
           # version heading line because the GitHub release name already has it.
-          awk -v heading_regex="^##[[:space:]]+\\[?${ESCAPED_VERSION}\\]?([[:space:]]*\\(|[[:space:]]|$)" '
+          awk -v heading_regex="^##[[:space:]]+[[]?${ESCAPED_VERSION}[]]?([[:space:]]*[(]|[[:space:]]|$)" '
             BEGIN {
               capture = 0
             }
