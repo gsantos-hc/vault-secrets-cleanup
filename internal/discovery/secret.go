@@ -18,7 +18,9 @@ func (e *Engine) discoverSecrets(ctx context.Context, client VaultClient, ns *vp
 	}
 
 	secrets := make([]*vpb.Secret, 0)
-	if err := e.listSecretsRecursive(ctx, client, basePath, "", &secrets); err != nil {
+	seenSecrets := make(map[string]struct{})
+	visitedSubpaths := make(map[string]struct{})
+	if err := e.listSecretsRecursive(ctx, client, basePath, "", &secrets, seenSecrets, visitedSubpaths); err != nil {
 		return nil, err
 	}
 	e.progress.AddSecrets(len(secrets))
@@ -26,12 +28,18 @@ func (e *Engine) discoverSecrets(ctx context.Context, client VaultClient, ns *vp
 	return secrets, nil
 }
 
-func (e *Engine) listSecretsRecursive(ctx context.Context, client VaultClient, basePath, subPath string, secrets *[]*vpb.Secret) error {
+func (e *Engine) listSecretsRecursive(ctx context.Context, client VaultClient, basePath, subPath string, secrets *[]*vpb.Secret, seenSecrets, visitedSubpaths map[string]struct{}) error {
+	normalizedSubPath := normalizeSecretPath(subPath)
+	if _, seen := visitedSubpaths[normalizedSubPath]; seen {
+		return nil
+	}
+	visitedSubpaths[normalizedSubPath] = struct{}{}
+
 	if err := e.rateLimiter.Wait(ctx); err != nil {
 		return err
 	}
 
-	fullPath := strings.Trim(path.Join(basePath, subPath), "/")
+	fullPath := strings.Trim(path.Join(basePath, normalizedSubPath), "/")
 	secret, err := client.ListSecrets(ctx, fullPath)
 	if err != nil {
 		return fmt.Errorf("failed to list %s: %w", fullPath, err)
@@ -55,16 +63,32 @@ func (e *Engine) listSecretsRecursive(ctx context.Context, client VaultClient, b
 		if !ok {
 			continue
 		}
-		relPath := path.Join(subPath, keyStr)
-		if strings.HasSuffix(keyStr, "/") {
-			err := e.listSecretsRecursive(ctx, client, basePath, relPath, secrets)
+
+		trimmedKey := strings.TrimSpace(keyStr)
+		if trimmedKey == "" {
+			continue
+		}
+
+		isFolder := strings.HasSuffix(trimmedKey, "/")
+		normalizedKey := strings.Trim(trimmedKey, "/")
+		if normalizedKey == "" {
+			continue
+		}
+
+		relPath := normalizeSecretPath(path.Join(normalizedSubPath, normalizedKey))
+		if isFolder {
+			err := e.listSecretsRecursive(ctx, client, basePath, relPath, secrets, seenSecrets, visitedSubpaths)
 			if err != nil {
 				e.progress.LogError(fmt.Sprintf("path %s: %v", relPath, err))
 				e.emitProgress()
-				continue
 			}
 			continue
 		}
+
+		if _, seen := seenSecrets[relPath]; seen {
+			continue
+		}
+		seenSecrets[relPath] = struct{}{}
 
 		*secrets = append(*secrets, &vpb.Secret{
 			Path:         relPath,
@@ -73,4 +97,12 @@ func (e *Engine) listSecretsRecursive(ctx context.Context, client VaultClient, b
 	}
 
 	return nil
+}
+
+func normalizeSecretPath(p string) string {
+	trimmed := strings.TrimSpace(p)
+	if trimmed == "" {
+		return ""
+	}
+	return strings.Trim(path.Clean(trimmed), "/")
 }
