@@ -297,3 +297,47 @@ func TestEngineRun_StopsBeforeLaterStagesWhenNamespaceCreationFails(t *testing.T
 	require.Empty(t, fake.mounts)
 	require.Empty(t, fake.writes)
 }
+
+func TestEngineRun_SkipNamespaceCreation(t *testing.T) {
+	fake := &fakeVaultWriter{}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 3,
+		TotalSecrets:   20,
+		KV2Probability: 0.9,
+		RandomSeed:     123,
+		SkipNamespaces: true,
+	})
+
+	result, err := engine.Run(context.Background())
+	require.NoError(t, err)
+	require.Zero(t, result.NamespacesCreated)
+	require.Empty(t, fake.namespaces)
+	require.Greater(t, result.MountsCreated, 0)
+	require.Greater(t, result.SecretsWritten, 0)
+}
+
+func TestEngineRun_SkipMountCreation(t *testing.T) {
+	fake := &fakeVaultWriter{}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 3,
+		TotalSecrets:   20,
+		KV2Probability: 0.9,
+		RandomSeed:     123,
+		SkipMounts:     true,
+	})
+
+	result, err := engine.Run(context.Background())
+	require.NoError(t, err)
+	require.Zero(t, result.MountsCreated)
+	require.Empty(t, fake.mounts)
+	require.Equal(t, 3, result.NamespacesCreated)
+	require.Greater(t, result.SecretsWritten, 0)
+}

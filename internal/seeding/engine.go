@@ -34,6 +34,8 @@ type Config struct {
 	Workers         int
 	NamespacePrefix string
 	MountPrefix     string
+	SkipNamespaces  bool
+	SkipMounts      bool
 	DryRun          bool
 	OnProgress      func(ProgressSnapshot)
 }
@@ -124,26 +126,30 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 		}
 	}
 
-	if err := runStage(ctx, workers, sliceSend(namespaces), func(ctx context.Context, namespace string) error {
-		return e.executeWrite(ctx, func() error {
-			return e.cfg.Writer.CreateNamespace(ctx, namespace)
-		})
-	}, func() {
-		res.NamespacesCreated++
-		e.emitProgress("namespaces", res)
-	}); err != nil {
-		return res, err
+	if !e.cfg.SkipNamespaces {
+		if err := runStage(ctx, workers, sliceSend(namespaces), func(ctx context.Context, namespace string) error {
+			return e.executeWrite(ctx, func() error {
+				return e.cfg.Writer.CreateNamespace(ctx, namespace)
+			})
+		}, func() {
+			res.NamespacesCreated++
+			e.emitProgress("namespaces", res)
+		}); err != nil {
+			return res, err
+		}
 	}
 
-	if err := runStage(ctx, workers, sliceSend(mounts), func(ctx context.Context, mount mountWorkItem) error {
-		return e.executeWrite(ctx, func() error {
-			return e.cfg.Writer.EnableKVMount(ctx, mount.namespace, mount.path, mount.kvVersion)
-		})
-	}, func() {
-		res.MountsCreated++
-		e.emitProgress("mounts", res)
-	}); err != nil {
-		return res, err
+	if !e.cfg.SkipMounts {
+		if err := runStage(ctx, workers, sliceSend(mounts), func(ctx context.Context, mount mountWorkItem) error {
+			return e.executeWrite(ctx, func() error {
+				return e.cfg.Writer.EnableKVMount(ctx, mount.namespace, mount.path, mount.kvVersion)
+			})
+		}, func() {
+			res.MountsCreated++
+			e.emitProgress("mounts", res)
+		}); err != nil {
+			return res, err
+		}
 	}
 
 	if err := runStage(ctx, workers, func(ctx context.Context, ch chan<- secretWorkItem) {
