@@ -292,6 +292,13 @@ func runStage[T any](ctx context.Context, workers int, send func(context.Context
 	var thresholdErr error
 	for err := range results {
 		if err != nil {
+			// Once the threshold has been hit, cancel() has already been called.
+			// Workers drain the jobs channel by emitting stageCtx.Err() for every
+			// remaining queued item rather than executing it. Those synthetic
+			// cancellations must not be counted as real failures.
+			if thresholdErr != nil && errors.Is(err, stageCtx.Err()) {
+				continue
+			}
 			*failures++
 			exceeded := maxFailures == 0 || (maxFailures > 0 && *failures >= maxFailures)
 			if exceeded && thresholdErr == nil {
