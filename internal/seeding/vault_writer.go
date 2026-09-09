@@ -20,7 +20,7 @@ func NewVaultClientWriter(client *vaultpkg.Client) *VaultClientWriter {
 }
 
 func (w *VaultClientWriter) CreateNamespace(ctx context.Context, namespace string) error {
-return w.client.CreateNamespace(ctx, namespace)
+	return w.client.CreateNamespace(ctx, namespace)
 }
 
 func (w *VaultClientWriter) EnableKVMount(ctx context.Context, namespace, mountPath string, kvVersion int) error {
