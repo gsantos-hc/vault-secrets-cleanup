@@ -5,6 +5,7 @@ package seeding
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -339,5 +340,87 @@ func TestEngineRun_SkipMountCreation(t *testing.T) {
 	require.Zero(t, result.MountsCreated)
 	require.Empty(t, fake.mounts)
 	require.Equal(t, 3, result.NamespacesCreated)
+	require.Greater(t, result.SecretsWritten, 0)
+}
+
+func TestEngineRun_ToleratesFailuresBelowMaxFailures(t *testing.T) {
+	called := 0
+	fake := &fakeVaultWriter{
+		createNamespaceErr: func(namespace string) error {
+			called++
+			if called <= 2 {
+				return fmt.Errorf("transient namespace error")
+			}
+			return nil
+		},
+	}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 4,
+		TotalSecrets:   20,
+		KV2Probability: 0.9,
+		RandomSeed:     123,
+		Workers:        1,
+		MaxFailures:    3,
+	})
+
+	result, err := engine.Run(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 2, result.Failures)
+	require.Greater(t, result.MountsCreated, 0)
+	require.Greater(t, result.SecretsWritten, 0)
+}
+
+func TestEngineRun_StopsWhenMaxFailuresReached(t *testing.T) {
+	fake := &fakeVaultWriter{
+		createNamespaceErr: func(namespace string) error {
+			return fmt.Errorf("permanent namespace error")
+		},
+	}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 5,
+		TotalSecrets:   20,
+		KV2Probability: 0.9,
+		RandomSeed:     123,
+		Workers:        1,
+		MaxFailures:    2,
+	})
+
+	result, err := engine.Run(context.Background())
+	require.ErrorIs(t, err, ErrFailureThresholdExceeded)
+	require.GreaterOrEqual(t, result.Failures, 2)
+	require.Empty(t, fake.mounts)
+	require.Empty(t, fake.writes)
+}
+
+func TestEngineRun_NeverStopsWithUnlimitedMaxFailures(t *testing.T) {
+	fake := &fakeVaultWriter{
+		createNamespaceErr: func(namespace string) error {
+			return fmt.Errorf("all namespaces fail")
+		},
+	}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 3,
+		TotalSecrets:   20,
+		KV2Probability: 0.9,
+		RandomSeed:     123,
+		MaxFailures:    -1,
+	})
+
+	result, err := engine.Run(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 3, result.Failures)
+	require.Greater(t, result.MountsCreated, 0)
 	require.Greater(t, result.SecretsWritten, 0)
 }

@@ -34,6 +34,7 @@ func main() {
 		mountPrefix     string
 		skipNamespaces  bool
 		skipMounts      bool
+		maxFailures     int
 		dryRun          bool
 		maxAttempts     int
 		progressMode    string
@@ -51,6 +52,7 @@ func main() {
 	flag.StringVar(&mountPrefix, "mount-prefix", "seed", "Prefix for generated mount names")
 	flag.BoolVar(&skipNamespaces, "skip-namespaces", false, "Skip creating namespaces (assume they already exist)")
 	flag.BoolVar(&skipMounts, "skip-mounts", false, "Skip enabling mounts (assume they already exist)")
+	flag.IntVar(&maxFailures, "max-failures", 0, "Maximum individual operation failures before stopping; 0 = stop on first, -1 = never stop")
 	flag.BoolVar(&dryRun, "dry-run", false, "Plan operations without writing to Vault")
 	flag.IntVar(&maxAttempts, "max-attempts", 3, "Maximum write retry attempts per operation")
 	flag.StringVar(&progressMode, "progress", "auto", "Progress output mode (auto|tty|log|off)")
@@ -98,6 +100,7 @@ func main() {
 		MountPrefix:     mountPrefix,
 		SkipNamespaces:  skipNamespaces,
 		SkipMounts:      skipMounts,
+		MaxFailures:     maxFailures,
 		DryRun:          dryRun,
 		OnProgress: func(snapshot seeding.ProgressSnapshot) {
 			reporter.Emit(snapshot)
