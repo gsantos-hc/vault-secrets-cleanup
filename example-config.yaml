@@ -1,3 +1,6 @@
+# Copyright IBM Corp. 2026
+# SPDX-License-Identifier: MIT
+
 vault:
   address: https://vault.example.com
   token: replace-with-token-or-use-env
