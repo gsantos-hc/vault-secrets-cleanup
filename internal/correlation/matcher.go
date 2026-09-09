@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2026
+// SPDX-License-Identifier: MIT
+
 package correlation
 
 import vpb "github.com/gsantos-hc/vault-secrets-cleanup/pkg/proto"
