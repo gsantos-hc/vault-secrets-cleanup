@@ -139,8 +139,7 @@ func (c *Client) Address() string {
 }
 
 func (c *Client) ListMounts(ctx context.Context) (map[string]*api.MountOutput, error) {
-	_ = ctx
-	mounts, err := c.client.Sys().ListMounts()
+	mounts, err := c.client.Sys().ListMountsWithContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list mounts: %w", err)
 	}
