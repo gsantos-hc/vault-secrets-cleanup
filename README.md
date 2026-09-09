@@ -65,8 +65,8 @@ vault-secrets-cleanup execute \
 
 ## Documentation
 
-- **[REQUIREMENTS.md](REQUIREMENTS.md)** - Complete requirements specification
-- **[SUMMARY.md](SUMMARY.md)** - Executive summary and key recommendations
+- **[REQUIREMENTS.md](docs/REQUIREMENTS.md)** - Complete requirements specification
+- **[SUMMARY.md](docs/SUMMARY.md)** - Executive summary and key recommendations
 - **[docs/installation.md](docs/installation.md)** - Installation and build options
 - **[docs/configuration.md](docs/configuration.md)** - Full configuration reference
 - **[docs/usage.md](docs/usage.md)** - CLI command usage and examples
