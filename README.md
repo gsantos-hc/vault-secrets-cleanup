@@ -187,7 +187,3 @@ Version bump behavior follows conventional commits through the release tool:
 - Breaking changes trigger a major version bump.
 - Feature commits trigger a minor version bump.
 - Fix commits trigger a patch version bump.
-
-## License
-
-[Your License Here]
