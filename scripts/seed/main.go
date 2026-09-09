@@ -114,7 +114,7 @@ func main() {
 	}
 
 	fmt.Printf("planned namespaces=%d mounts=%d secrets=%d\n", result.PlannedNamespaces, result.PlannedMounts, result.PlannedSecrets)
-	fmt.Printf("created namespaces=%d mounts=%d secrets=%d\n", result.NamespacesCreated, result.MountsCreated, result.SecretsWritten)
+	fmt.Printf("created namespaces=%d mounts=%d secrets=%d failures=%d\n", result.NamespacesCreated, result.MountsCreated, result.SecretsWritten, result.Failures)
 	fmt.Printf("seed=%d dry_run=%t\n", randomSeed, dryRun)
 }
 
