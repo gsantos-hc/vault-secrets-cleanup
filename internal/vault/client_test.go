@@ -160,13 +160,15 @@ func TestKVVersions_SingleMountListCall(t *testing.T) {
 		listCallCount++
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"kv-v1/": map[string]any{
-				"type":    "kv",
-				"options": map[string]any{"version": "1"},
-			},
-			"kv-v2/": map[string]any{
-				"type":    "kv",
-				"options": map[string]any{"version": "2"},
+			"data": map[string]any{
+				"kv-v1/": map[string]any{
+					"type":    "kv",
+					"options": map[string]any{"version": "1"},
+				},
+				"kv-v2/": map[string]any{
+					"type":    "kv",
+					"options": map[string]any{"version": "2"},
+				},
 			},
 		})
 	}))
