@@ -1,7 +1,7 @@
 {
   "name": "vault-secrets-cleanup-release",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Release tooling configuration for vault-secrets-cleanup",
   "devDependencies": {
     "commit-and-tag-version": "^13.1.2",

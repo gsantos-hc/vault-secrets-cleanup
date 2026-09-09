@@ -2,6 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.1](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0...v0.1.1) (2026-09-09)
 ## [0.1.0](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0-alpha.3...v0.1.0) (2026-05-01)
 
 ## [0.1.0-alpha.3](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-04-29)
