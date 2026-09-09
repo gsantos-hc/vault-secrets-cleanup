@@ -16,18 +16,18 @@ import (
 )
 
 type fakeVaultWriter struct {
-	mu                  sync.Mutex
-	namespaces          []string
-	mounts              []mountCall
-	writes              []writeCall
-	onCreateNamespace   func(namespace string)
-	onEnableKVMount     func(namespace, mountPath string)
-	onWriteKVSecret     func(namespace, mountPath, secretPath string)
-	createNamespaceErr  func(namespace string) error
-	enableMountErr      func(namespace, mountPath string) error
-	writeSecretErr      func(namespace, mountPath, secretPath string) error
-	mountVersions       map[string]int                         // namespace+":"+mountPath → version
-	getMountVersionErr  func(namespace, mountPath string) error
+	mu                 sync.Mutex
+	namespaces         []string
+	mounts             []mountCall
+	writes             []writeCall
+	onCreateNamespace  func(namespace string)
+	onEnableKVMount    func(namespace, mountPath string)
+	onWriteKVSecret    func(namespace, mountPath, secretPath string)
+	createNamespaceErr func(namespace string) error
+	enableMountErr     func(namespace, mountPath string) error
+	writeSecretErr     func(namespace, mountPath, secretPath string) error
+	mountVersions      map[string]int // namespace+":"+mountPath → version
+	getMountVersionErr func(namespace, mountPath string) error
 }
 
 type mountCall struct {
