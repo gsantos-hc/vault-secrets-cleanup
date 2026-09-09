@@ -40,6 +40,9 @@ type VaultWriter interface {
 	CreateNamespace(ctx context.Context, namespace string) error
 	EnableKVMount(ctx context.Context, namespace, mountPath string, kvVersion int) error
 	WriteKVSecret(ctx context.Context, namespace, mountPath, secretPath string, data map[string]any, kvVersion int) error
+	// GetMountKVVersions returns the KV version (1 or 2) of each mount in mountPaths
+	// within namespace. Returns an error if any mount is absent or is not a KV mount.
+	GetMountKVVersions(ctx context.Context, namespace string, mountPaths []string) (map[string]int, error)
 }
 
 type Waiter interface {

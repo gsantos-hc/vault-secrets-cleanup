@@ -5,6 +5,7 @@ package seeding
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"strings"
 
@@ -37,6 +38,25 @@ func (w *VaultClientWriter) WriteKVSecret(ctx context.Context, namespace, mountP
 		return err
 	}
 	return nsClient.WriteKVSecret(ctx, mountPath, secretPath, data, kvVersion)
+}
+
+// GetMountKVVersions returns the KV version (1 or 2) for each path in
+// mountPaths within the given namespace. It returns an error if any mount is
+// absent from Vault or is not a KV mount.
+func (w *VaultClientWriter) GetMountKVVersions(ctx context.Context, namespace string, mountPaths []string) (map[string]int, error) {
+	nsClient, err := w.client.WithNamespace(composeNamespace(w.client.Namespace(), namespace))
+	if err != nil {
+		return nil, err
+	}
+	versions := make(map[string]int, len(mountPaths))
+	for _, mp := range mountPaths {
+		v, err := nsClient.KVVersion(ctx, mp)
+		if err != nil {
+			return nil, fmt.Errorf("discover kv version for mount %q in namespace %q: %w", mp, namespace, err)
+		}
+		versions[mp] = v
+	}
+	return versions, nil
 }
 
 func composeNamespace(base, child string) string {

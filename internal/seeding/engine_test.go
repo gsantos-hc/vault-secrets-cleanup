@@ -15,16 +15,18 @@ import (
 )
 
 type fakeVaultWriter struct {
-	mu                 sync.Mutex
-	namespaces         []string
-	mounts             []mountCall
-	writes             []writeCall
-	onCreateNamespace  func(namespace string)
-	onEnableKVMount    func(namespace, mountPath string)
-	onWriteKVSecret    func(namespace, mountPath, secretPath string)
-	createNamespaceErr func(namespace string) error
-	enableMountErr     func(namespace, mountPath string) error
-	writeSecretErr     func(namespace, mountPath, secretPath string) error
+	mu                  sync.Mutex
+	namespaces          []string
+	mounts              []mountCall
+	writes              []writeCall
+	onCreateNamespace   func(namespace string)
+	onEnableKVMount     func(namespace, mountPath string)
+	onWriteKVSecret     func(namespace, mountPath, secretPath string)
+	createNamespaceErr  func(namespace string) error
+	enableMountErr      func(namespace, mountPath string) error
+	writeSecretErr      func(namespace, mountPath, secretPath string) error
+	mountVersions       map[string]int                         // namespace+":"+mountPath → version
+	getMountVersionErr  func(namespace, mountPath string) error
 }
 
 type mountCall struct {
@@ -83,6 +85,26 @@ func (f *fakeVaultWriter) WriteKVSecret(ctx context.Context, namespace, mountPat
 	defer f.mu.Unlock()
 	f.writes = append(f.writes, writeCall{namespace: namespace, mountPath: mountPath, path: secretPath, version: kvVersion})
 	return nil
+}
+
+func (f *fakeVaultWriter) GetMountKVVersions(ctx context.Context, namespace string, mountPaths []string) (map[string]int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	versions := make(map[string]int, len(mountPaths))
+	for _, mp := range mountPaths {
+		key := namespace + ":" + mp
+		if f.getMountVersionErr != nil {
+			if err := f.getMountVersionErr(namespace, mp); err != nil {
+				return nil, err
+			}
+		}
+		v, ok := f.mountVersions[key]
+		if !ok {
+			return nil, fmt.Errorf("mount %q not found in namespace %q", mp, namespace)
+		}
+		versions[mp] = v
+	}
+	return versions, nil
 }
 
 type noOpLimiter struct{}
