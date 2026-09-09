@@ -41,6 +41,7 @@ go run ./scripts/seed \
   --namespaces 25 \
   --total-secrets 50000 \
   --workers 8 \
+  --seed 42 \
   --skip-namespaces \
   --skip-mounts
 ```

@@ -303,7 +303,10 @@ func runStage[T any](ctx context.Context, workers int, send func(context.Context
 		onSuccess()
 	}
 
-	return thresholdErr
+if err := ctx.Err(); err != nil {
+	return err
+}
+return thresholdErr
 }
 
 func (e *Engine) emitProgress(phase string, res Result) {
