@@ -539,3 +539,53 @@ func TestEngineRun_NeverStopsWithUnlimitedMaxFailures(t *testing.T) {
 	require.Greater(t, result.MountsCreated, 0)
 	require.Greater(t, result.SecretsWritten, 0)
 }
+
+func TestEngineRun_RejectsInvalidMaxFailures(t *testing.T) {
+	fake := &fakeVaultWriter{}
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 1,
+		TotalSecrets:   1,
+		KV2Probability: 0.5,
+		RandomSeed:     1,
+		MaxFailures:    -2,
+	})
+
+	_, err := engine.Run(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "MaxFailures")
+}
+
+func TestEngineRun_SkipMounts_DiscoveryFailureCountsAgainstBudget(t *testing.T) {
+	// Two namespaces; the first has mount-version discovery fail.
+	// With MaxFailures=2, failure count hits the budget on the first namespace
+	// (which has 1 mount), so the run stops and secrets are not written.
+	// Use a seed that allocates exactly 1 mount per namespace.
+	fake := &fakeVaultWriter{
+		getMountVersionErr: func(namespace, mountPath string) error {
+			if namespace == "seed-ns-001" {
+				return fmt.Errorf("simulated discovery error")
+			}
+			return nil
+		},
+	}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 2,
+		TotalSecrets:   4,
+		KV2Probability: 0.5,
+		RandomSeed:     99,
+		Workers:        1,
+		SkipMounts:     true,
+		MaxFailures:    -1, // never stop; all failures are recorded
+	})
+
+	result, err := engine.Run(context.Background())
+	require.NoError(t, err)
+	require.Greater(t, result.Failures, 0, "discovery failure must be counted")
+}

@@ -190,9 +190,11 @@ func TestKVVersions_ErrorOnMissingMount(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"other-mount/": map[string]any{
-				"type":    "kv",
-				"options": map[string]any{"version": "1"},
+			"data": map[string]any{
+				"other-mount/": map[string]any{
+					"type":    "kv",
+					"options": map[string]any{"version": "1"},
+				},
 			},
 		})
 	}))
@@ -204,6 +206,30 @@ func TestKVVersions_ErrorOnMissingMount(t *testing.T) {
 	_, err = client.KVVersions(context.Background(), []string{"missing"})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
+}
+
+func TestKVVersions_AcceptsGenericMounts(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": map[string]any{
+				"legacy-kv/": map[string]any{
+					"type":    "generic",
+					"options": map[string]any{},
+				},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{Address: srv.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	versions, err := client.KVVersions(context.Background(), []string{"legacy-kv"})
+	require.NoError(t, err)
+	require.Equal(t, map[string]int{"legacy-kv": 1}, versions)
 }
 
 func TestWriteKVSecretV2(t *testing.T) {

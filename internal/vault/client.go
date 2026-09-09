@@ -199,7 +199,7 @@ func (c *Client) KVVersions(ctx context.Context, mountPaths []string) (map[strin
 		if !ok {
 			return nil, fmt.Errorf("mount %q not found", normalized)
 		}
-		if mount.Type != "kv" {
+		if mount.Type != "kv" && mount.Type != "generic" {
 			return nil, fmt.Errorf("mount %q is not kv", normalized)
 		}
 		if mount.Options != nil && mount.Options["version"] == "2" {

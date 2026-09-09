@@ -120,6 +120,9 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 	if e.cfg.RateLimiter == nil {
 		return Result{}, fmt.Errorf("rate limiter is required")
 	}
+	if e.cfg.MaxFailures < -1 {
+		return Result{}, fmt.Errorf("MaxFailures must be -1 (unlimited) or >= 0, got %d", e.cfg.MaxFailures)
+	}
 
 	rng := rand.New(rand.NewSource(e.cfg.RandomSeed))
 	plan, err := Allocate(AllocationInput{
@@ -209,7 +212,16 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 			}
 			versions, err := e.cfg.Writer.GetMountKVVersions(ctx, nsName, paths)
 			if err != nil {
-				return res, fmt.Errorf("discover mount versions in namespace %q: %w", nsName, err)
+				// Count each mount in the namespace as a failure and skip its
+				// secrets, so the failure budget applies to discovery errors too.
+				res.Failures += len(paths)
+				plan[i].Mounts = nil
+				exceeded := e.cfg.MaxFailures == 0 || (e.cfg.MaxFailures > 0 && res.Failures >= e.cfg.MaxFailures)
+				if exceeded {
+					return res, &failureThresholdError{max: e.cfg.MaxFailures, got: res.Failures,
+						last: fmt.Errorf("discover mount versions in namespace %q: %w", nsName, err)}
+				}
+				continue
 			}
 			for j, mount := range ns.Mounts {
 				mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
