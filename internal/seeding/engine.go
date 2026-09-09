@@ -292,11 +292,14 @@ func runStage[T any](ctx context.Context, workers int, send func(context.Context
 	var thresholdErr error
 	for err := range results {
 		if err != nil {
-			// Once the threshold has been hit, cancel() has already been called.
-			// Workers drain the jobs channel by emitting stageCtx.Err() for every
-			// remaining queued item rather than executing it. Those synthetic
-			// cancellations must not be counted as real failures.
-			if thresholdErr != nil && errors.Is(err, stageCtx.Err()) {
+			// Workers skip queued items (emitting stageCtx.Err()) whenever the
+			// stage context is already done — either because the failure threshold
+			// was reached or because the parent ctx was cancelled. Either way the
+			// job never ran and the result is synthetic; counting it would inflate
+			// Result.Failures and misreport the tolerance outcome. Real errors
+			// returned by in-flight run() calls are distinct from stageCtx.Err()
+			// and are still counted correctly.
+			if stageCtx.Err() != nil && errors.Is(err, stageCtx.Err()) {
 				continue
 			}
 			*failures++
