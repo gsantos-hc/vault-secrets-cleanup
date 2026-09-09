@@ -6,6 +6,7 @@ package seeding
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -344,7 +345,24 @@ func TestEngineRun_SkipNamespaceCreation(t *testing.T) {
 }
 
 func TestEngineRun_SkipMountCreation(t *testing.T) {
-	fake := &fakeVaultWriter{}
+	setupRNG := rand.New(rand.NewSource(123))
+	setupPlan, err := Allocate(AllocationInput{
+		NamespaceCount: 3,
+		TotalSecrets:   20,
+		KV2Probability: 0.9,
+		RNG:            setupRNG,
+	})
+	require.NoError(t, err)
+
+	mountVersions := make(map[string]int)
+	for _, ns := range setupPlan {
+		for _, m := range ns.Mounts {
+			// No prefix in this test, so withPrefix("", x) == x.
+			key := ns.Name + ":" + m.Name
+			mountVersions[key] = m.KVVersion
+		}
+	}
+	fake := &fakeVaultWriter{mountVersions: mountVersions}
 
 	engine := NewEngine(Config{
 		Writer:         fake,
@@ -363,6 +381,81 @@ func TestEngineRun_SkipMountCreation(t *testing.T) {
 	require.Empty(t, fake.mounts)
 	require.Equal(t, 3, result.NamespacesCreated)
 	require.Greater(t, result.SecretsWritten, 0)
+}
+
+func TestEngineRun_SkipMounts_DiscoversMountVersions(t *testing.T) {
+	// Use seed 42 and fixed parameters so we can inspect the exact plan.
+	// With KV2Probability=0 every mount will be KV1 in the random plan,
+	// but we configure the fake to report KV2 — the engine must use the
+	// discovered version, not the planned one.
+	const seed int64 = 42
+	rng := rand.New(rand.NewSource(seed))
+	plan, err := Allocate(AllocationInput{
+		NamespaceCount: 2,
+		TotalSecrets:   4,
+		KV2Probability: 0, // plan will assign KV1 to everything
+		RNG:            rng,
+	})
+	require.NoError(t, err)
+
+	// Build the fake's mountVersions map so every mount reports KV2.
+	nsPrefix := ""
+	mountPrefix := ""
+	mountVersions := make(map[string]int)
+	for _, ns := range plan {
+		nsName := withPrefix(nsPrefix, ns.Name)
+		for _, m := range ns.Mounts {
+			mountName := withPrefix(mountPrefix, m.Name)
+			key := nsName + ":" + mountName
+			mountVersions[key] = 2 // override: actual version is KV2
+		}
+	}
+
+	fake := &fakeVaultWriter{mountVersions: mountVersions}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 2,
+		TotalSecrets:   4,
+		KV2Probability: 0,
+		RandomSeed:     seed,
+		SkipMounts:     true,
+	})
+
+	result, err := engine.Run(context.Background())
+	require.NoError(t, err)
+	require.Greater(t, result.SecretsWritten, 0)
+
+	// Every write must use version 2 (discovered), not version 1 (planned).
+	fake.mu.Lock()
+	defer fake.mu.Unlock()
+	for _, w := range fake.writes {
+		require.Equal(t, 2, w.version,
+			"expected write on mount %q in ns %q to use discovered version 2, got %d",
+			w.mountPath, w.namespace, w.version)
+	}
+}
+
+func TestEngineRun_SkipMounts_ErrorWhenMountNotFound(t *testing.T) {
+	// The fake has no mountVersions configured, so any lookup returns an error.
+	fake := &fakeVaultWriter{}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 1,
+		TotalSecrets:   2,
+		KV2Probability: 0.5,
+		RandomSeed:     7,
+		SkipMounts:     true,
+	})
+
+	_, err := engine.Run(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not found")
 }
 
 func TestEngineRun_ToleratesFailuresBelowMaxFailures(t *testing.T) {

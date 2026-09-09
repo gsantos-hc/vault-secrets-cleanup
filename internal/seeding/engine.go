@@ -184,6 +184,37 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 		}
 	}
 
+	// When mounts are skipped, the plan's KVVersion values are randomly
+	// allocated and may not match the actual mounts already in Vault.
+	// Discover the real versions now, before writing any secrets.
+	if e.cfg.SkipMounts {
+		// Build a per-namespace map of mount paths to look up.
+		nsToMounts := make(map[string][]string, len(plan))
+		for _, ns := range plan {
+			nsName := withPrefix(e.cfg.NamespacePrefix, ns.Name)
+			for _, mount := range ns.Mounts {
+				mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
+				nsToMounts[nsName] = append(nsToMounts[nsName], mountName)
+			}
+		}
+		// Discover versions namespace by namespace and update the plan in place.
+		for i, ns := range plan {
+			nsName := withPrefix(e.cfg.NamespacePrefix, ns.Name)
+			paths := nsToMounts[nsName]
+			if len(paths) == 0 {
+				continue
+			}
+			versions, err := e.cfg.Writer.GetMountKVVersions(ctx, nsName, paths)
+			if err != nil {
+				return res, fmt.Errorf("discover mount versions in namespace %q: %w", nsName, err)
+			}
+			for j, mount := range ns.Mounts {
+				mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
+				plan[i].Mounts[j].KVVersion = versions[mountName]
+			}
+		}
+	}
+
 	if err := runStage(ctx, workers, func(ctx context.Context, ch chan<- secretWorkItem) {
 		// rng is only accessed here, after Allocate has completed, so there is no
 		// concurrent access; no mutex is needed.
