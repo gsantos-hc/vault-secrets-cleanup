@@ -204,6 +204,9 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 			if len(paths) == 0 {
 				continue
 			}
+			if err := e.wait(ctx); err != nil {
+				return res, err
+			}
 			versions, err := e.cfg.Writer.GetMountKVVersions(ctx, nsName, paths)
 			if err != nil {
 				return res, fmt.Errorf("discover mount versions in namespace %q: %w", nsName, err)
