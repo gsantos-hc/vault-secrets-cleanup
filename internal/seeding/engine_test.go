@@ -559,9 +559,9 @@ func TestEngineRun_RejectsInvalidMaxFailures(t *testing.T) {
 }
 
 func TestEngineRun_SkipMounts_DiscoveryFailureCountsAgainstBudget(t *testing.T) {
-	// Two namespaces; the first has mount-version discovery fail.
-	// With MaxFailures=2, failure count hits the budget on the first namespace
-	// (which has 1 mount), so the run stops and secrets are not written.
+	// The first namespace's mount-version discovery fails. With MaxFailures=-1,
+	// the engine records the failure, skips that namespace's secrets, and
+	// continues processing the remaining namespaces.
 	// Use a seed that allocates exactly 1 mount per namespace.
 	fake := &fakeVaultWriter{
 		getMountVersionErr: func(namespace, mountPath string) error {
