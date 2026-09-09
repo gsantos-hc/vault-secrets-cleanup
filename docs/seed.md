@@ -67,22 +67,42 @@ go run ./scripts/seed \
 
 ## Required Vault capabilities
 
-Required Vault capabilities for seeding include namespace creation, mount creation, and secret writes:
+The required capabilities depend on which setup stages are executed. Secret writes are always required. Namespace and mount creation are only required when the corresponding `--skip-*` flag is **not** set. When `--skip-mounts` is used, the engine reads `sys/mounts` in every namespace to discover the real KV version of each existing mount.
+
+**Always required** (secret writes):
 
 ```hcl
-path "sys/namespaces/*" {
+# Write KV v2 secrets: <namespace>/<mount>/data/<secret>
+path "+/+/data/+" {
   capabilities = ["create", "update"]
 }
 
+# Write KV v1 secrets: <namespace>/<mount>/<secret>
+path "+/+/+" {
+  capabilities = ["create", "update"]
+}
+```
+
+**Required unless `--skip-mounts` is set** (mount enablement):
+
+```hcl
 path "+/sys/mounts/*" {
   capabilities = ["create", "update"]
 }
+```
 
-path "+/*/data/*" {
-  capabilities = ["create", "update"]
+**Required when `--skip-mounts` is set** (mount version discovery):
+
+```hcl
+path "+/sys/mounts" {
+  capabilities = ["read"]
 }
+```
 
-path "+/*" {
+**Required unless `--skip-namespaces` is set** (namespace creation):
+
+```hcl
+path "sys/namespaces/*" {
   capabilities = ["create", "update"]
 }
 ```
