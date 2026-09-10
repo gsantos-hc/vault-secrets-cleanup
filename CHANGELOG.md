@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.1](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0...v0.1.1) (2026-09-10)
+
+### Features
+
+* **seed:** optionally skip namespace and mount seeding and configurable error tolerance ([#19](https://github.com/gsantos-hc/vault-secrets-cleanup/issues/19)) ([b1eca4d](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/b1eca4da3b62ddc02d9d03ed1b263755a8df8bb7))
+
+### Bug Fixes
+
+* **lint:** resolve golangci-lint errcheck, staticcheck, and unused findings ([#22](https://github.com/gsantos-hc/vault-secrets-cleanup/issues/22)) ([4958e7a](https://github.com/gsantos-hc/vault-secrets-cleanup/commit/4958e7aa9f969395c9a7631f186fbad80c41bd47))
 ## [0.1.0](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0-alpha.3...v0.1.0) (2026-05-01)
 
 ## [0.1.0-alpha.3](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-04-29)
