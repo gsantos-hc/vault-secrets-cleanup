@@ -563,7 +563,24 @@ func TestEngineRun_SkipMounts_DiscoveryFailureCountsAgainstBudget(t *testing.T) 
 	// the engine records the failure, skips that namespace's secrets, and
 	// continues processing the remaining namespaces.
 	// Use a seed that allocates exactly 1 mount per namespace.
+	rng := rand.New(rand.NewSource(99))
+	plan, err := Allocate(AllocationInput{
+		NamespaceCount: 2,
+		TotalSecrets:   4,
+		KV2Probability: 0.5,
+		RNG:            rng,
+	})
+	require.NoError(t, err)
+
+	mountVersions := make(map[string]int)
+	for _, ns := range plan {
+		for _, mount := range ns.Mounts {
+			mountVersions[ns.Name+":"+mount.Name] = mount.KVVersion
+		}
+	}
+
 	fake := &fakeVaultWriter{
+		mountVersions: mountVersions,
 		getMountVersionErr: func(namespace, mountPath string) error {
 			if namespace == "seed-ns-001" {
 				return fmt.Errorf("simulated discovery error")
@@ -588,4 +605,52 @@ func TestEngineRun_SkipMounts_DiscoveryFailureCountsAgainstBudget(t *testing.T) 
 	result, err := engine.Run(context.Background())
 	require.NoError(t, err)
 	require.Greater(t, result.Failures, 0, "discovery failure must be counted")
+	require.Greater(t, result.SecretsWritten, 0, "successful namespaces must continue processing")
+}
+
+func TestEngineRun_SkipMounts_DiscoveryCancellationPropagatesContextError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rng := rand.New(rand.NewSource(99))
+	plan, err := Allocate(AllocationInput{
+		NamespaceCount: 2,
+		TotalSecrets:   4,
+		KV2Probability: 0.5,
+		RNG:            rng,
+	})
+	require.NoError(t, err)
+
+	mountVersions := make(map[string]int)
+	for _, ns := range plan {
+		for _, mount := range ns.Mounts {
+			mountVersions[ns.Name+":"+mount.Name] = mount.KVVersion
+		}
+	}
+
+	fake := &fakeVaultWriter{
+		mountVersions: mountVersions,
+		getMountVersionErr: func(namespace, mountPath string) error {
+			cancel()
+			return ctx.Err()
+		},
+	}
+
+	engine := NewEngine(Config{
+		Writer:         fake,
+		RateLimiter:    noOpLimiter{},
+		Retry:          retry.Config{MaxAttempts: 1},
+		NamespaceCount: 2,
+		TotalSecrets:   4,
+		KV2Probability: 0.5,
+		RandomSeed:     99,
+		Workers:        1,
+		SkipNamespaces: true,
+		SkipMounts:     true,
+	})
+
+	result, err := engine.Run(ctx)
+	require.ErrorIs(t, err, context.Canceled)
+	require.NotErrorIs(t, err, ErrFailureThresholdExceeded)
+	require.Zero(t, result.Failures)
 }

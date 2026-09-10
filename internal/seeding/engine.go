@@ -212,6 +212,9 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 			}
 			versions, err := e.cfg.Writer.GetMountKVVersions(ctx, nsName, paths)
 			if err != nil {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return res, ctxErr
+				}
 				// Count each mount in the namespace as a failure and skip its
 				// secrets, so the failure budget applies to discovery errors too.
 				res.Failures += len(paths)
