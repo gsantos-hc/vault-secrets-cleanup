@@ -51,7 +51,7 @@ func newValidateCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), "Validation successful")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Validation successful")
 			return nil
 		},
 	}

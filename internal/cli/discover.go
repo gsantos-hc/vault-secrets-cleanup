@@ -26,10 +26,6 @@ type discoverEngine interface {
 	Discover(ctx context.Context) (*vpb.Inventory, error)
 }
 
-var createDiscoverEngine = func(cfg *config.Config, workers int) (discoverEngine, error) {
-	return createDiscoverEngineWithProgress(cfg, workers, nil)
-}
-
 var createDiscoverEngineWithProgress = func(cfg *config.Config, workers int, onProgress func(discovery.ProgressSnapshot)) (discoverEngine, error) {
 	client, err := vaultpkg.NewClient(vaultpkg.Config{
 		Address: cfg.Vault.Address,

@@ -21,7 +21,7 @@ func TestOpenFile_Plain(t *testing.T) {
 
 	r, err := OpenFile(path)
 	require.NoError(t, err)
-	defer r.Close()
+	t.Cleanup(func() { require.NoError(t, r.Close()) })
 
 	data, err := io.ReadAll(r)
 	require.NoError(t, err)
@@ -41,7 +41,7 @@ func TestOpenFile_Gzip(t *testing.T) {
 
 	r, err := OpenFile(path)
 	require.NoError(t, err)
-	defer r.Close()
+	t.Cleanup(func() { require.NoError(t, r.Close()) })
 
 	data, err := io.ReadAll(r)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestOpenFile_XZ(t *testing.T) {
 
 	r, err := OpenFile(path)
 	require.NoError(t, err)
-	defer r.Close()
+	t.Cleanup(func() { require.NoError(t, r.Close()) })
 
 	data, err := io.ReadAll(r)
 	require.NoError(t, err)

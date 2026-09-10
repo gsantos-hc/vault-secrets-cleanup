@@ -121,14 +121,14 @@ func runExecute(ctx context.Context, opts executeOptions, cfg *config.Config, in
 	printExecutionSummary(out, plan, opts)
 
 	if !opts.dryRun && !opts.confirmAll {
-		fmt.Fprint(out, "Type 'yes' to confirm deletion: ")
+		_, _ = fmt.Fprint(out, "Type 'yes' to confirm deletion: ")
 		reader := bufio.NewReader(in)
 		response, err := reader.ReadString('\n')
 		if err != nil {
 			return fmt.Errorf("failed to read confirmation: %w", err)
 		}
 		if strings.TrimSpace(response) != "yes" {
-			fmt.Fprintln(out, "Deletion cancelled")
+			_, _ = fmt.Fprintln(out, "Deletion cancelled")
 			return nil
 		}
 	}
@@ -153,19 +153,19 @@ func runExecute(ctx context.Context, opts executeOptions, cfg *config.Config, in
 		logger.Info("deletion complete", "deleted", deleted, "failed", failed, "dry_run", opts.dryRun)
 	}
 
-	fmt.Fprintln(out)
-	fmt.Fprintln(out, "=== Deletion Complete ===")
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "=== Deletion Complete ===")
 	if opts.dryRun {
-		fmt.Fprintf(out, "Simulated deletions: %d\n", countWouldDelete(plan))
+		_, _ = fmt.Fprintf(out, "Simulated deletions: %d\n", countWouldDelete(plan))
 	} else {
-		fmt.Fprintf(out, "Successfully deleted: %d\n", deleted)
+		_, _ = fmt.Fprintf(out, "Successfully deleted: %d\n", deleted)
 	}
-	fmt.Fprintf(out, "Failed: %d\n", failed)
-	fmt.Fprintf(out, "Plan file: %s\n", opts.plan)
+	_, _ = fmt.Fprintf(out, "Failed: %d\n", failed)
+	_, _ = fmt.Fprintf(out, "Plan file: %s\n", opts.plan)
 
 	if failed > 0 {
-		fmt.Fprintln(out)
-		fmt.Fprintln(out, "Some deletions failed. Re-run execute to retry failed items.")
+		_, _ = fmt.Fprintln(out)
+		_, _ = fmt.Fprintln(out, "Some deletions failed. Re-run execute to retry failed items.")
 	}
 
 	return nil
@@ -173,19 +173,19 @@ func runExecute(ctx context.Context, opts executeOptions, cfg *config.Config, in
 
 func printExecutionSummary(out io.Writer, plan *vpb.DeletionPlan, opts executeOptions) {
 	stats := plan.GetStats()
-	fmt.Fprintln(out, "=== Deletion Plan Summary ===")
-	fmt.Fprintf(out, "Total secrets: %d\n", stats.GetTotalSecrets())
-	fmt.Fprintf(out, "To delete: %d\n", stats.GetToDeleteCount())
-	fmt.Fprintf(out, "Stale: %d\n", stats.GetStaleCount())
-	fmt.Fprintf(out, "Unknown: %d\n", stats.GetUnknownCount())
-	fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "=== Deletion Plan Summary ===")
+	_, _ = fmt.Fprintf(out, "Total secrets: %d\n", stats.GetTotalSecrets())
+	_, _ = fmt.Fprintf(out, "To delete: %d\n", stats.GetToDeleteCount())
+	_, _ = fmt.Fprintf(out, "Stale: %d\n", stats.GetStaleCount())
+	_, _ = fmt.Fprintf(out, "Unknown: %d\n", stats.GetUnknownCount())
+	_, _ = fmt.Fprintln(out)
 
 	if opts.dryRun {
-		fmt.Fprintln(out, "DRY RUN MODE: no secrets will be deleted.")
+		_, _ = fmt.Fprintln(out, "DRY RUN MODE: no secrets will be deleted.")
 	} else {
-		fmt.Fprintln(out, "WARNING: This operation permanently deletes secrets from Vault.")
+		_, _ = fmt.Fprintln(out, "WARNING: This operation permanently deletes secrets from Vault.")
 	}
-	fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out)
 }
 
 func countActionResults(plan *vpb.DeletionPlan) (deleted int, failed int) {
