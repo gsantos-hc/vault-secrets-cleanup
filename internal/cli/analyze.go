@@ -94,10 +94,6 @@ func runAnalyze(ctx context.Context, opts analyzeOptions) error {
 	return nil
 }
 
-type auditParser interface {
-	Parse(ctx context.Context, reader auditReader, handler func(event audit.AuditEvent) error) error
-}
-
 type auditReader interface {
 	Read([]byte) (int, error)
 }
@@ -119,7 +115,7 @@ func processAuditFile(ctx context.Context, path string, parser *parserAdapter, e
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	return parser.Parse(ctx, reader, func(event audit.AuditEvent) error {
 		if onEvent != nil {

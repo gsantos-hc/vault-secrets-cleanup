@@ -20,18 +20,6 @@ type mountDiscoveryJob struct {
 	mountIndex int
 }
 
-func (e *Engine) discoverMounts(ctx context.Context, ns *vpb.Namespace) ([]*vpb.Mount, error) {
-	client := e.client
-	if ns.Path != "" {
-		nsClient, err := e.client.WithNamespace(ns.Path)
-		if err != nil {
-			return nil, err
-		}
-		client = nsClient
-	}
-	return e.discoverMountMetadataWithClient(ctx, client, ns)
-}
-
 func (e *Engine) discoverMountMetadataWithClient(ctx context.Context, client VaultClient, ns *vpb.Namespace) ([]*vpb.Mount, error) {
 	if err := e.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
