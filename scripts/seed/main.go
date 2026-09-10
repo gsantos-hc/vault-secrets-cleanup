@@ -32,6 +32,9 @@ func main() {
 		workers         int
 		namespacePrefix string
 		mountPrefix     string
+		skipNamespaces  bool
+		skipMounts      bool
+		maxFailures     int
 		dryRun          bool
 		maxAttempts     int
 		progressMode    string
@@ -47,6 +50,9 @@ func main() {
 	flag.IntVar(&workers, "workers", 4, "Number of parallel workers to use within each seeding stage")
 	flag.StringVar(&namespacePrefix, "namespace-prefix", "seed", "Prefix for generated namespace names")
 	flag.StringVar(&mountPrefix, "mount-prefix", "seed", "Prefix for generated mount names")
+	flag.BoolVar(&skipNamespaces, "skip-namespaces", false, "Skip creating namespaces (assume they already exist)")
+	flag.BoolVar(&skipMounts, "skip-mounts", false, "Skip enabling mounts (assume they already exist)")
+	flag.IntVar(&maxFailures, "max-failures", 0, "Maximum individual operation failures before stopping; 0 = stop on first, -1 = never stop")
 	flag.BoolVar(&dryRun, "dry-run", false, "Plan operations without writing to Vault")
 	flag.IntVar(&maxAttempts, "max-attempts", 3, "Maximum write retry attempts per operation")
 	flag.StringVar(&progressMode, "progress", "auto", "Progress output mode (auto|tty|log|off)")
@@ -92,6 +98,9 @@ func main() {
 		Workers:         workers,
 		NamespacePrefix: namespacePrefix,
 		MountPrefix:     mountPrefix,
+		SkipNamespaces:  skipNamespaces,
+		SkipMounts:      skipMounts,
+		MaxFailures:     maxFailures,
 		DryRun:          dryRun,
 		OnProgress: func(snapshot seeding.ProgressSnapshot) {
 			reporter.Emit(snapshot)
@@ -105,7 +114,7 @@ func main() {
 	}
 
 	fmt.Printf("planned namespaces=%d mounts=%d secrets=%d\n", result.PlannedNamespaces, result.PlannedMounts, result.PlannedSecrets)
-	fmt.Printf("created namespaces=%d mounts=%d secrets=%d\n", result.NamespacesCreated, result.MountsCreated, result.SecretsWritten)
+	fmt.Printf("created namespaces=%d mounts=%d secrets=%d failures=%d\n", result.NamespacesCreated, result.MountsCreated, result.SecretsWritten, result.Failures)
 	fmt.Printf("seed=%d dry_run=%t\n", randomSeed, dryRun)
 }
 

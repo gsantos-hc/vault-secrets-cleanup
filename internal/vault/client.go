@@ -139,8 +139,7 @@ func (c *Client) Address() string {
 }
 
 func (c *Client) ListMounts(ctx context.Context) (map[string]*api.MountOutput, error) {
-	_ = ctx
-	mounts, err := c.client.Sys().ListMounts()
+	mounts, err := c.client.Sys().ListMountsWithContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list mounts: %w", err)
 	}
@@ -182,6 +181,34 @@ func (c *Client) KVVersion(ctx context.Context, mountPath string) (int, error) {
 		return 2, nil
 	}
 	return 1, nil
+}
+
+// KVVersions returns the KV version (1 or 2) for each path in mountPaths. It
+// issues a single sys/mounts listing and derives all requested versions from
+// that one response. It returns an error if any mount is absent or is not a KV
+// mount.
+func (c *Client) KVVersions(ctx context.Context, mountPaths []string) (map[string]int, error) {
+	mounts, err := c.ListMounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	versions := make(map[string]int, len(mountPaths))
+	for _, mp := range mountPaths {
+		normalized := normalizeMountPath(mp)
+		mount, ok := mounts[normalized]
+		if !ok {
+			return nil, fmt.Errorf("mount %q not found", normalized)
+		}
+		if mount.Type != "kv" && mount.Type != "generic" {
+			return nil, fmt.Errorf("mount %q is not kv", normalized)
+		}
+		if mount.Options != nil && mount.Options["version"] == "2" {
+			versions[mp] = 2
+		} else {
+			versions[mp] = 1
+		}
+	}
+	return versions, nil
 }
 
 func normalizeMountPath(path string) string {

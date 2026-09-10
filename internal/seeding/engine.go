@@ -5,6 +5,7 @@ package seeding
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -13,10 +14,35 @@ import (
 	"github.com/gsantos-hc/vault-secrets-cleanup/internal/retry"
 )
 
+// ErrFailureThresholdExceeded is returned by Run when the number of failed
+// individual operations reaches the configured MaxFailures limit.
+var ErrFailureThresholdExceeded = errors.New("failure threshold exceeded")
+
+// failureThresholdError wraps both the sentinel and the last triggering error
+// so callers can use errors.Is against either.
+type failureThresholdError struct {
+	max  int
+	got  int
+	last error
+}
+
+func (e *failureThresholdError) Error() string {
+	return fmt.Sprintf("stopped after %d failed operations (max %d): %v", e.got, e.max, e.last)
+}
+
+func (e *failureThresholdError) Is(target error) bool {
+	return target == ErrFailureThresholdExceeded
+}
+
+func (e *failureThresholdError) Unwrap() error { return e.last }
+
 type VaultWriter interface {
 	CreateNamespace(ctx context.Context, namespace string) error
 	EnableKVMount(ctx context.Context, namespace, mountPath string, kvVersion int) error
 	WriteKVSecret(ctx context.Context, namespace, mountPath, secretPath string, data map[string]any, kvVersion int) error
+	// GetMountKVVersions returns the KV version (1 or 2) of each mount in mountPaths
+	// within namespace. Returns an error if any mount is absent or is not a KV mount.
+	GetMountKVVersions(ctx context.Context, namespace string, mountPaths []string) (map[string]int, error)
 }
 
 type Waiter interface {
@@ -34,8 +60,15 @@ type Config struct {
 	Workers         int
 	NamespacePrefix string
 	MountPrefix     string
-	DryRun          bool
-	OnProgress      func(ProgressSnapshot)
+	SkipNamespaces  bool
+	SkipMounts      bool
+	// MaxFailures controls how many individual operation failures are tolerated
+	// before the engine stops. 0 = stop on first failure (default). A positive
+	// value N stops execution after the Nth failure. -1 = never stop for
+	// failures (all failures are recorded but execution continues).
+	MaxFailures int
+	DryRun      bool
+	OnProgress  func(ProgressSnapshot)
 }
 
 type ProgressSnapshot struct {
@@ -55,6 +88,7 @@ type Result struct {
 	NamespacesCreated int
 	MountsCreated     int
 	SecretsWritten    int
+	Failures          int
 }
 
 type Engine struct {
@@ -85,6 +119,9 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 	}
 	if e.cfg.RateLimiter == nil {
 		return Result{}, fmt.Errorf("rate limiter is required")
+	}
+	if e.cfg.MaxFailures < -1 {
+		return Result{}, fmt.Errorf("MaxFailures must be -1 (unlimited) or >= 0, got %d", e.cfg.MaxFailures)
 	}
 
 	rng := rand.New(rand.NewSource(e.cfg.RandomSeed))
@@ -124,26 +161,76 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 		}
 	}
 
-	if err := runStage(ctx, workers, sliceSend(namespaces), func(ctx context.Context, namespace string) error {
-		return e.executeWrite(ctx, func() error {
-			return e.cfg.Writer.CreateNamespace(ctx, namespace)
-		})
-	}, func() {
-		res.NamespacesCreated++
-		e.emitProgress("namespaces", res)
-	}); err != nil {
-		return res, err
+	if !e.cfg.SkipNamespaces {
+		if err := runStage(ctx, workers, sliceSend(namespaces), func(ctx context.Context, namespace string) error {
+			return e.executeWrite(ctx, func() error {
+				return e.cfg.Writer.CreateNamespace(ctx, namespace)
+			})
+		}, func() {
+			res.NamespacesCreated++
+			e.emitProgress("namespaces", res)
+		}, &res.Failures, e.cfg.MaxFailures); err != nil {
+			return res, err
+		}
 	}
 
-	if err := runStage(ctx, workers, sliceSend(mounts), func(ctx context.Context, mount mountWorkItem) error {
-		return e.executeWrite(ctx, func() error {
-			return e.cfg.Writer.EnableKVMount(ctx, mount.namespace, mount.path, mount.kvVersion)
-		})
-	}, func() {
-		res.MountsCreated++
-		e.emitProgress("mounts", res)
-	}); err != nil {
-		return res, err
+	if !e.cfg.SkipMounts {
+		if err := runStage(ctx, workers, sliceSend(mounts), func(ctx context.Context, mount mountWorkItem) error {
+			return e.executeWrite(ctx, func() error {
+				return e.cfg.Writer.EnableKVMount(ctx, mount.namespace, mount.path, mount.kvVersion)
+			})
+		}, func() {
+			res.MountsCreated++
+			e.emitProgress("mounts", res)
+		}, &res.Failures, e.cfg.MaxFailures); err != nil {
+			return res, err
+		}
+	}
+
+	// When mounts are skipped, the plan's KVVersion values are randomly
+	// allocated and may not match the actual mounts already in Vault.
+	// Discover the real versions now, before writing any secrets.
+	if e.cfg.SkipMounts {
+		// Build a per-namespace map of mount paths to look up.
+		nsToMounts := make(map[string][]string, len(plan))
+		for _, ns := range plan {
+			nsName := withPrefix(e.cfg.NamespacePrefix, ns.Name)
+			for _, mount := range ns.Mounts {
+				mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
+				nsToMounts[nsName] = append(nsToMounts[nsName], mountName)
+			}
+		}
+		// Discover versions namespace by namespace and update the plan in place.
+		for i, ns := range plan {
+			nsName := withPrefix(e.cfg.NamespacePrefix, ns.Name)
+			paths := nsToMounts[nsName]
+			if len(paths) == 0 {
+				continue
+			}
+			if err := e.wait(ctx); err != nil {
+				return res, err
+			}
+			versions, err := e.cfg.Writer.GetMountKVVersions(ctx, nsName, paths)
+			if err != nil {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return res, ctxErr
+				}
+				// Count each mount in the namespace as a failure and skip its
+				// secrets, so the failure budget applies to discovery errors too.
+				res.Failures += len(paths)
+				plan[i].Mounts = nil
+				exceeded := e.cfg.MaxFailures == 0 || (e.cfg.MaxFailures > 0 && res.Failures >= e.cfg.MaxFailures)
+				if exceeded {
+					return res, &failureThresholdError{max: e.cfg.MaxFailures, got: res.Failures,
+						last: fmt.Errorf("discover mount versions in namespace %q: %w", nsName, err)}
+				}
+				continue
+			}
+			for j, mount := range ns.Mounts {
+				mountName := withPrefix(e.cfg.MountPrefix, mount.Name)
+				plan[i].Mounts[j].KVVersion = versions[mountName]
+			}
+		}
 	}
 
 	if err := runStage(ctx, workers, func(ctx context.Context, ch chan<- secretWorkItem) {
@@ -176,7 +263,7 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 	}, func() {
 		res.SecretsWritten++
 		e.emitProgress("secrets", res)
-	}); err != nil {
+	}, &res.Failures, e.cfg.MaxFailures); err != nil {
 		return res, err
 	}
 
@@ -209,9 +296,11 @@ func sliceSend[T any](items []T) func(context.Context, chan<- T) {
 // goroutines. send is called in its own goroutine and should write items to the
 // supplied channel, respecting ctx for early cancellation. onSuccess is called
 // (from the collector goroutine) for each item that completes without error.
-// The first error encountered cancels the stage context and is returned once all
-// in-flight work has drained.
-func runStage[T any](ctx context.Context, workers int, send func(context.Context, chan<- T), run func(context.Context, T) error, onSuccess func()) error {
+//
+// failures is a shared counter incremented on every failed item. maxFailures
+// controls when execution stops: 0 = stop on first failure, N > 0 = stop when
+// failures reaches N, -1 = never stop for failures.
+func runStage[T any](ctx context.Context, workers int, send func(context.Context, chan<- T), run func(context.Context, T) error, onSuccess func(), failures *int, maxFailures int) error {
 	stageCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -252,11 +341,23 @@ func runStage[T any](ctx context.Context, workers int, send func(context.Context
 
 	// Collector – process results in the calling goroutine so that onSuccess is
 	// never called concurrently.
-	var firstErr error
+	var thresholdErr error
 	for err := range results {
 		if err != nil {
-			if firstErr == nil {
-				firstErr = err
+			// Workers skip queued items (emitting stageCtx.Err()) whenever the
+			// stage context is already done — either because the failure threshold
+			// was reached or because the parent ctx was cancelled. Either way the
+			// job never ran and the result is synthetic; counting it would inflate
+			// Result.Failures and misreport the tolerance outcome. Real errors
+			// returned by in-flight run() calls are distinct from stageCtx.Err()
+			// and are still counted correctly.
+			if stageCtx.Err() != nil && errors.Is(err, stageCtx.Err()) {
+				continue
+			}
+			*failures++
+			exceeded := maxFailures == 0 || (maxFailures > 0 && *failures >= maxFailures)
+			if exceeded && thresholdErr == nil {
+				thresholdErr = &failureThresholdError{max: maxFailures, got: *failures, last: err}
 				cancel() // signal producer and workers to stop early
 			}
 			continue
@@ -264,7 +365,10 @@ func runStage[T any](ctx context.Context, workers int, send func(context.Context
 		onSuccess()
 	}
 
-	return firstErr
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return thresholdErr
 }
 
 func (e *Engine) emitProgress(phase string, res Result) {
