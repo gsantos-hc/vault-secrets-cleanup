@@ -4,7 +4,7 @@
   "version": "0.1.2",
   "description": "Release tooling configuration for vault-secrets-cleanup",
   "devDependencies": {
-    "commit-and-tag-version": "^13.1.2",
+    "commit-and-tag-version": "^13.2.0",
     "conventional-changelog-cli": "^5.0.0"
   }
 }
