@@ -11,6 +11,10 @@ repos:
     hooks:
       - id: golangci-lint
       - id: golangci-lint-fmt
+  - repo: https://github.com/hashicorp/copywrite
+    rev: v0.25.3
+    hooks:
+      - id: add-headers
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: 91ab4bf57e58b32adf1a122681f6ebe164d081c8 # v4.4.0
     hooks:
