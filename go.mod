@@ -1,6 +1,6 @@
 module github.com/gsantos-hc/vault-secrets-cleanup
 
-go 1.26.1
+go 1.26.10
 
 require (
 	github.com/hashicorp/vault/api v1.23.0
