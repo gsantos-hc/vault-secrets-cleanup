@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.3](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.2...v0.1.3) (2026-10-20)
+
+### Security
+
+* **go**: update to v1.26.10 to address CVE-2026-111943
+
 ## [0.1.2](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.1...v0.1.2) (2026-09-10)
 ## [0.1.1](https://github.com/gsantos-hc/vault-secrets-cleanup/compare/v0.1.0...v0.1.1) (2026-09-10)
 
